@@ -180,7 +180,7 @@ export const mastra = new Mastra({
           }
 
           // Run the workflow
-          const run = await mastra.getWorkflow("intelligent-assistant-workflow").createRunAsync();
+          const run = await mastra.getWorkflow("intelligentAssistantWorkflow").createRunAsync();
           return await run.start({
             inputData: {
               message: JSON.stringify(payload),
