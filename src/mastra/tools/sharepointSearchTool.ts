@@ -84,39 +84,86 @@ export const sharepointSearchTool = createTool({
     try {
       const client = await getSharePointClient();
       
-      // Use Microsoft Graph Search API to find documents
-      const requestBody = {
-        requests: [
-          {
-            entityTypes: ['driveItem', 'listItem'],
-            query: {
-              queryString: context.query,
-            },
-            from: 0,
-            size: Math.min(context.limit || 10, 25),
-          },
-        ],
-      };
+      logger?.info('🔍 [SharePoint Search] Getting user drives');
       
-      logger?.info('🔍 [SharePoint Search] Sending search request to Graph API');
+      // First, get all available drives (OneDrive and SharePoint sites)
+      let allResults: any[] = [];
       
-      const response = await client
-        .api('/search/query')
-        .post(requestBody);
+      try {
+        // Get the user's OneDrive
+        const myDriveResponse = await client.api('/me/drive').get();
+        if (myDriveResponse?.id) {
+          logger?.info('🔍 [SharePoint Search] Searching in OneDrive', { driveId: myDriveResponse.id });
+          
+          // Search within OneDrive
+          const searchResponse = await client
+            .api(`/drives/${myDriveResponse.id}/root/search(q='${context.query}')`)
+            .top(context.limit || 10)
+            .get();
+          
+          if (searchResponse?.value) {
+            allResults = allResults.concat(searchResponse.value);
+          }
+        }
+      } catch (driveError: any) {
+        logger?.warn('⚠️ [SharePoint Search] Could not access OneDrive', { error: driveError.message });
+      }
       
-      const hits = response.value?.[0]?.hitsContainers?.[0]?.hits || [];
+      // Try to get shared drives/sites
+      try {
+        const sitesResponse = await client.api('/sites?search=*').top(10).get();
+        
+        if (sitesResponse?.value) {
+          logger?.info('🔍 [SharePoint Search] Found sites', { count: sitesResponse.value.length });
+          
+          // Search in each site's default drive
+          for (const site of sitesResponse.value.slice(0, 3)) { // Limit to first 3 sites for performance
+            try {
+              const siteId = site.id;
+              const driveResponse = await client.api(`/sites/${siteId}/drive`).get();
+              
+              if (driveResponse?.id) {
+                const siteSearchResponse = await client
+                  .api(`/drives/${driveResponse.id}/root/search(q='${context.query}')`)
+                  .top(context.limit || 10)
+                  .get();
+                
+                if (siteSearchResponse?.value) {
+                  allResults = allResults.concat(siteSearchResponse.value);
+                }
+              }
+            } catch (siteError: any) {
+              logger?.warn('⚠️ [SharePoint Search] Could not search site', { 
+                siteId: site.id,
+                error: siteError.message 
+              });
+            }
+          }
+        }
+      } catch (sitesError: any) {
+        logger?.warn('⚠️ [SharePoint Search] Could not access sites', { error: sitesError.message });
+      }
       
-      logger?.info('🔍 [SharePoint Search] Search completed', { resultsFound: hits.length });
+      logger?.info('🔍 [SharePoint Search] Search completed', { resultsFound: allResults.length });
       
-      const results = hits.map((hit: any) => ({
-        id: hit.resource?.id || '',
-        name: hit.resource?.name || 'Unknown',
-        webUrl: hit.resource?.webUrl || '',
-        lastModified: hit.resource?.lastModifiedDateTime || '',
-        createdBy: hit.resource?.createdBy?.user?.displayName || 'Unknown',
-        summary: hit.summary || '',
-        fileType: hit.resource?.name?.split('.').pop() || 'unknown',
-      }));
+      // Process and deduplicate results
+      const seenIds = new Set();
+      const results = allResults
+        .filter((item: any) => {
+          if (seenIds.has(item.id)) return false;
+          seenIds.add(item.id);
+          return true;
+        })
+        .slice(0, context.limit || 10)
+        .map((item: any) => ({
+          id: item.id || '',
+          name: item.name || 'Unknown',
+          webUrl: item.webUrl || '',
+          lastModified: item.lastModifiedDateTime || '',
+          createdBy: item.createdBy?.user?.displayName || 'Unknown',
+          summary: item.name || '',
+          fileType: item.name?.split('.').pop() || 'unknown',
+        }));
       
       logger?.info('✅ [SharePoint Search] Results processed successfully', { 
         totalResults: results.length,
