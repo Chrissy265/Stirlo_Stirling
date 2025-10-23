@@ -74,12 +74,17 @@ export const mondaySearchTool = createTool({
     });
     
     try {
-      // Query to get all boards and their items
+      // Query to get all boards, their columns (for titles), and items
       const query = `
         query {
           boards (limit: 50) {
             id
             name
+            columns {
+              id
+              title
+              type
+            }
             items_page (limit: 100) {
               items {
                 id
@@ -87,7 +92,6 @@ export const mondaySearchTool = createTool({
                 state
                 column_values {
                   id
-                  title
                   text
                   value
                   type
@@ -116,22 +120,30 @@ export const mondaySearchTool = createTool({
       const filteredBoards = data.boards
         .map((board: any) => {
           const items = board.items_page?.items || [];
+          const columns = board.columns || [];
+          
+          // Create a map of column IDs to titles for easy lookup
+          const columnTitleMap = new Map(
+            columns.map((col: any) => [col.id, { title: col.title, type: col.type }])
+          );
           
           // Filter items that match the search query
           const matchingItems = items.filter((item: any) => {
             const nameMatch = item.name?.toLowerCase().includes(searchLower);
-            const columnMatch = item.column_values?.some((col: any) => 
-              col.text?.toLowerCase().includes(searchLower) ||
-              col.title?.toLowerCase().includes(searchLower)
-            );
+            const columnMatch = item.column_values?.some((col: any) => {
+              const colInfo = columnTitleMap.get(col.id);
+              return col.text?.toLowerCase().includes(searchLower) ||
+                     colInfo?.title?.toLowerCase().includes(searchLower);
+            });
             
             // If looking for deadlines, prioritize items with date columns
             if (context.includeDeadlines) {
-              const hasDeadline = item.column_values?.some((col: any) => 
-                col.type === 'date' || 
-                col.title?.toLowerCase().includes('deadline') ||
-                col.title?.toLowerCase().includes('due')
-              );
+              const hasDeadline = item.column_values?.some((col: any) => {
+                const colInfo = columnTitleMap.get(col.id);
+                return col.type === 'date' || 
+                       colInfo?.title?.toLowerCase().includes('deadline') ||
+                       colInfo?.title?.toLowerCase().includes('due');
+              });
               return (nameMatch || columnMatch) && hasDeadline;
             }
             
@@ -140,11 +152,14 @@ export const mondaySearchTool = createTool({
             id: item.id,
             name: item.name,
             state: item.state,
-            columnValues: item.column_values?.map((col: any) => ({
-              title: col.title,
-              text: col.text || '',
-              value: col.value || '',
-            })) || [],
+            columnValues: item.column_values?.map((col: any) => {
+              const colInfo = columnTitleMap.get(col.id);
+              return {
+                title: colInfo?.title || col.id,
+                text: col.text || '',
+                value: col.value || '',
+              };
+            }) || [],
           }));
           
           totalItems += matchingItems.length;
@@ -206,6 +221,11 @@ export const mondayGetUpcomingDeadlinesTool = createTool({
           boards (limit: 50) {
             id
             name
+            columns {
+              id
+              title
+              type
+            }
             items_page (limit: 100) {
               items {
                 id
@@ -213,7 +233,6 @@ export const mondayGetUpcomingDeadlinesTool = createTool({
                 state
                 column_values {
                   id
-                  title
                   text
                   value
                   type
@@ -242,15 +261,22 @@ export const mondayGetUpcomingDeadlinesTool = createTool({
       // Process all boards and items
       data.boards.forEach((board: any) => {
         const items = board.items_page?.items || [];
+        const columns = board.columns || [];
+        
+        // Create a map of column IDs to column info
+        const columnMap = new Map(
+          columns.map((col: any) => [col.id, { title: col.title, type: col.type }])
+        );
         
         items.forEach((item: any) => {
           // Look for date columns that might be deadlines
-          const dateColumns = item.column_values?.filter((col: any) => 
-            col.type === 'date' && col.value && col.value !== '{}' &&
-            (col.title?.toLowerCase().includes('deadline') ||
-             col.title?.toLowerCase().includes('due') ||
-             col.title?.toLowerCase().includes('date'))
-          );
+          const dateColumns = item.column_values?.filter((col: any) => {
+            const colInfo = columnMap.get(col.id);
+            return col.type === 'date' && col.value && col.value !== '{}' &&
+                   (colInfo?.title?.toLowerCase().includes('deadline') ||
+                    colInfo?.title?.toLowerCase().includes('due') ||
+                    colInfo?.title?.toLowerCase().includes('date'));
+          });
           
           dateColumns?.forEach((dateCol: any) => {
             try {
