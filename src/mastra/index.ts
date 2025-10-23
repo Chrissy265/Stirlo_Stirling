@@ -9,8 +9,13 @@ import { z } from "zod";
 
 import { sharedPostgresStorage } from "./storage";
 import { inngest, inngestServe } from "./inngest";
-import { exampleWorkflow } from "./workflows/exampleWorkflow";
-import { exampleAgent } from "./agents/exampleAgent";
+import { intelligentAssistant } from "./agents/intelligentAssistant";
+import { sharepointSearchTool } from "./tools/sharepointSearchTool";
+import { mondaySearchTool, mondayGetUpcomingDeadlinesTool } from "./tools/mondayTool";
+import { ragSearchTool, ragStoreTool } from "./tools/ragTool";
+import { intelligentAssistantWorkflow } from "./workflows/intelligentAssistantWorkflow";
+import { registerSlackTrigger } from "../triggers/slackTriggers";
+import { format } from "node:util";
 
 class ProductionPinoLogger extends MastraLogger {
   protected logger: pino.Logger;
@@ -56,14 +61,20 @@ class ProductionPinoLogger extends MastraLogger {
 export const mastra = new Mastra({
   storage: sharedPostgresStorage,
   // Register your workflows here
-  workflows: {},
+  workflows: { intelligentAssistantWorkflow },
   // Register your agents here
-  agents: {},
+  agents: { intelligentAssistant },
   mcpServers: {
     allTools: new MCPServer({
       name: "allTools",
       version: "1.0.0",
-      tools: {},
+      tools: {
+        sharepointSearchTool,
+        mondaySearchTool,
+        mondayGetUpcomingDeadlinesTool,
+        ragSearchTool,
+        ragStoreTool,
+      },
     }),
   },
   bundler: {
@@ -126,6 +137,58 @@ export const mastra = new Mastra({
         // 3. Establishing a publish-subscribe system for real-time monitoring
         //    through the workflow:${workflowId}:${runId} channel
       },
+      // Register Slack trigger for the intelligent assistant
+      ...registerSlackTrigger({
+        triggerType: "slack/message.channels",
+        handler: async (mastra, triggerInfo) => {
+          const logger = mastra.getLogger();
+          logger?.info("📝 [Slack Trigger] Received message", { 
+            channel: triggerInfo.params.channel,
+            channelName: triggerInfo.params.channelDisplayName 
+          });
+
+          // By default, respond only to direct messages or mentions
+          const { payload } = triggerInfo;
+          const isDirectMessage = payload?.event?.channel_type === "im";
+          const botUserId = payload?.authorizations?.[0]?.user_id;
+          const isMention = botUserId && payload?.event?.text?.includes(`<@${botUserId}>`);
+          const shouldRespond = isDirectMessage || isMention;
+
+          if (!shouldRespond) {
+            logger?.info("📝 [Slack Trigger] Ignoring message (not DM or mention)");
+            return null;
+          }
+
+          const channel = payload?.event?.channel;
+          const timestamp = payload?.event?.ts;
+
+          // React with hourglass to show processing
+          if (channel && timestamp) {
+            try {
+              const { getClient } = await import("../triggers/slackTriggers");
+              const { slack } = await getClient();
+              await slack.reactions.add({
+                channel,
+                timestamp,
+                name: "hourglass_flowing_sand",
+              });
+            } catch (error) {
+              logger?.error("📝 [Slack Trigger] Error adding reaction", {
+                error: format(error),
+              });
+            }
+          }
+
+          // Run the workflow
+          const run = await mastra.getWorkflow("intelligent-assistant-workflow").createRunAsync();
+          return await run.start({
+            inputData: {
+              message: JSON.stringify(payload),
+              threadId: `slack/${payload.event.thread_ts || payload.event.ts}`,
+            },
+          });
+        },
+      }),
     ],
   },
   logger:
