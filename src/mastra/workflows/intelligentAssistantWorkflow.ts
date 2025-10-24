@@ -48,15 +48,23 @@ const useAgentStep = createStep({
         isThreadedMessage: !!payload.event?.thread_ts
       });
       
-      // Call the intelligent assistant agent
-      logger?.info('🤖 [Use Agent Step] Calling agent.generate()');
-      const { text } = await intelligentAssistant.generate([
+      // Call the intelligent assistant agent using streamLegacy for AI SDK v4 compatibility
+      logger?.info('🤖 [Use Agent Step] Calling agent.streamLegacy()');
+      const stream = await intelligentAssistant.streamLegacy([
         { role: "user", content: userMessage }
       ], {
         resourceId: "slack-bot",
         threadId: inputData.threadId,
         maxSteps: 5, // Allow multi-step tool usage
       });
+      
+      // Collect the streamed text
+      let text = '';
+      for await (const chunk of stream.textStream) {
+        text += chunk;
+      }
+      
+      logger?.info('✅ [Use Agent Step] Stream collected', { textLength: text.length });
       
       logger?.info('✅ [Use Agent Step] Agent processing complete', { 
         responseLength: text.length 
