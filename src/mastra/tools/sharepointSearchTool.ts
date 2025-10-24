@@ -6,43 +6,75 @@ import { Client } from '@microsoft/microsoft-graph-client';
  * SharePoint Search Tool
  * 
  * Searches for documents and files across the entire SharePoint organization
- * using Microsoft Graph API.
+ * using Microsoft Graph Search API with app-only authentication.
  */
 
-let connectionSettings: any;
+interface TokenCache {
+  access_token: string;
+  expires_at: number;
+}
 
+let tokenCache: TokenCache | null = null;
+
+/**
+ * Get OAuth2 access token using client credentials flow (app-only authentication)
+ * This allows full organizational access without user delegation
+ */
 async function getAccessToken() {
-  if (connectionSettings && connectionSettings.settings.expires_at && new Date(connectionSettings.settings.expires_at).getTime() > Date.now()) {
-    return connectionSettings.settings.access_token;
+  const logger = console;
+  
+  // Check if we have a valid cached token
+  if (tokenCache && tokenCache.expires_at > Date.now()) {
+    logger.log('🔐 [SharePoint Auth] Using cached access token');
+    return tokenCache.access_token;
   }
   
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY 
-    ? 'repl ' + process.env.REPL_IDENTITY 
-    : process.env.WEB_REPL_RENEWAL 
-    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
-    : null;
-
-  if (!xReplitToken) {
-    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
+  const tenantId = process.env.SHAREPOINT_TENANT_ID;
+  const clientId = process.env.SHAREPOINT_CLIENT_ID;
+  const clientSecret = process.env.SHAREPOINT_CLIENT_SECRET;
+  
+  if (!tenantId || !clientId || !clientSecret) {
+    throw new Error('SharePoint credentials not configured. Required: SHAREPOINT_TENANT_ID, SHAREPOINT_CLIENT_ID, SHAREPOINT_CLIENT_SECRET');
   }
-
-  connectionSettings = await fetch(
-    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sharepoint',
-    {
+  
+  logger.log('🔐 [SharePoint Auth] Acquiring new access token via client credentials flow');
+  
+  const tokenEndpoint = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+  const params = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    scope: 'https://graph.microsoft.com/.default',
+    grant_type: 'client_credentials',
+  });
+  
+  try {
+    const response = await fetch(tokenEndpoint, {
+      method: 'POST',
       headers: {
-        'Accept': 'application/json',
-        'X_REPLIT_TOKEN': xReplitToken
-      }
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Token acquisition failed: ${response.status} - ${errorText}`);
     }
-  ).then(res => res.json()).then(data => data.items?.[0]);
-
-  const accessToken = connectionSettings?.settings?.access_token || connectionSettings.settings?.oauth?.credentials?.access_token;
-
-  if (!connectionSettings || !accessToken) {
-    throw new Error('SharePoint not connected');
+    
+    const data = await response.json();
+    
+    // Cache the token (expires_in is in seconds, we subtract 5 minutes for safety)
+    tokenCache = {
+      access_token: data.access_token,
+      expires_at: Date.now() + ((data.expires_in - 300) * 1000),
+    };
+    
+    logger.log('✅ [SharePoint Auth] Access token acquired successfully');
+    return tokenCache.access_token;
+  } catch (error: any) {
+    logger.error('❌ [SharePoint Auth] Token acquisition failed', error);
+    throw new Error(`Failed to acquire SharePoint access token: ${error.message}`);
   }
-  return accessToken;
 }
 
 async function getSharePointClient() {
@@ -57,10 +89,10 @@ async function getSharePointClient() {
 
 export const sharepointSearchTool = createTool({
   id: "sharepoint-search",
-  description: `Search for documents and files across the SharePoint organization. Use this when users ask about documents, files, policies, reports, or any content stored in SharePoint. Can search by filename, content, author, or keywords.`,
+  description: `Search for documents and files across the entire SharePoint organization using full-text content search. Use this when users ask about documents, files, policies, reports, or any content stored in SharePoint. Searches file names, content, metadata, authors, and more.`,
   
   inputSchema: z.object({
-    query: z.string().describe("The search query (keywords, filename, content to find)"),
+    query: z.string().describe("The search query (keywords, filename, content to find). Supports natural language queries."),
     limit: z.number().optional().default(10).describe("Maximum number of results to return (default: 10, max: 25)"),
   }),
   
@@ -73,101 +105,83 @@ export const sharepointSearchTool = createTool({
       createdBy: z.string().optional(),
       summary: z.string().optional(),
       fileType: z.string().optional(),
+      siteName: z.string().optional(),
+      contentSnippet: z.string().optional(),
     })),
     totalResults: z.number(),
   }),
   
   execute: async ({ context, mastra }) => {
     const logger = mastra?.getLogger();
-    logger?.info('🔍 [SharePoint Search] Starting search', { query: context.query, limit: context.limit });
+    logger?.info('🔍 [SharePoint Search] Starting organizational search', { query: context.query, limit: context.limit });
     
     try {
       const client = await getSharePointClient();
       
-      logger?.info('🔍 [SharePoint Search] Getting user drives');
+      logger?.info('🔍 [SharePoint Search] Using Microsoft Search API');
       
-      // First, get all available drives (OneDrive and SharePoint sites)
-      let allResults: any[] = [];
+      // Use Microsoft Search API for comprehensive organization-wide search
+      // This searches across all SharePoint sites, libraries, and content
+      const searchRequest = {
+        requests: [
+          {
+            entityTypes: ['driveItem'],
+            query: {
+              queryString: context.query,
+            },
+            from: 0,
+            size: Math.min(context.limit || 10, 25),
+            fields: [
+              'id',
+              'name',
+              'webUrl',
+              'lastModifiedDateTime',
+              'createdBy',
+              'fileSystemInfo',
+              'file',
+              'parentReference',
+            ],
+            region: 'AUS',
+          },
+        ],
+      };
       
-      try {
-        // Get the user's OneDrive
-        const myDriveResponse = await client.api('/me/drive').get();
-        if (myDriveResponse?.id) {
-          logger?.info('🔍 [SharePoint Search] Searching in OneDrive', { driveId: myDriveResponse.id });
-          
-          // Search within OneDrive
-          const searchResponse = await client
-            .api(`/drives/${myDriveResponse.id}/root/search(q='${context.query}')`)
-            .top(context.limit || 10)
-            .get();
-          
-          if (searchResponse?.value) {
-            allResults = allResults.concat(searchResponse.value);
-          }
-        }
-      } catch (driveError: any) {
-        logger?.warn('⚠️ [SharePoint Search] Could not access OneDrive', { error: driveError.message });
-      }
+      logger?.info('🔍 [SharePoint Search] Executing search request', { searchRequest });
       
-      // Try to get shared drives/sites
-      try {
-        const sitesResponse = await client.api('/sites?search=*').top(10).get();
+      const searchResponse = await client
+        .api('/search/query')
+        .post(searchRequest);
+      
+      logger?.info('🔍 [SharePoint Search] Search response received', { 
+        hasValue: !!searchResponse?.value,
+        valueLength: searchResponse?.value?.length 
+      });
+      
+      const searchResults = searchResponse?.value?.[0]?.hitsContainers?.[0]?.hits || [];
+      
+      logger?.info('🔍 [SharePoint Search] Processing results', { resultsFound: searchResults.length });
+      
+      const results = searchResults.map((hit: any) => {
+        const resource = hit.resource;
+        const summary = hit.summary || '';
         
-        if (sitesResponse?.value) {
-          logger?.info('🔍 [SharePoint Search] Found sites', { count: sitesResponse.value.length });
-          
-          // Search in each site's default drive
-          for (const site of sitesResponse.value.slice(0, 3)) { // Limit to first 3 sites for performance
-            try {
-              const siteId = site.id;
-              const driveResponse = await client.api(`/sites/${siteId}/drive`).get();
-              
-              if (driveResponse?.id) {
-                const siteSearchResponse = await client
-                  .api(`/drives/${driveResponse.id}/root/search(q='${context.query}')`)
-                  .top(context.limit || 10)
-                  .get();
-                
-                if (siteSearchResponse?.value) {
-                  allResults = allResults.concat(siteSearchResponse.value);
-                }
-              }
-            } catch (siteError: any) {
-              logger?.warn('⚠️ [SharePoint Search] Could not search site', { 
-                siteId: site.id,
-                error: siteError.message 
-              });
-            }
-          }
-        }
-      } catch (sitesError: any) {
-        logger?.warn('⚠️ [SharePoint Search] Could not access sites', { error: sitesError.message });
-      }
-      
-      logger?.info('🔍 [SharePoint Search] Search completed', { resultsFound: allResults.length });
-      
-      // Process and deduplicate results
-      const seenIds = new Set();
-      const results = allResults
-        .filter((item: any) => {
-          if (seenIds.has(item.id)) return false;
-          seenIds.add(item.id);
-          return true;
-        })
-        .slice(0, context.limit || 10)
-        .map((item: any) => ({
-          id: item.id || '',
-          name: item.name || 'Unknown',
-          webUrl: item.webUrl || '',
-          lastModified: item.lastModifiedDateTime || '',
-          createdBy: item.createdBy?.user?.displayName || 'Unknown',
-          summary: item.name || '',
-          fileType: item.name?.split('.').pop() || 'unknown',
-        }));
+        return {
+          id: resource.id || '',
+          name: resource.name || 'Unknown',
+          webUrl: resource.webUrl || '',
+          lastModified: resource.lastModifiedDateTime || '',
+          createdBy: resource.createdBy?.user?.displayName || 'Unknown',
+          summary: resource.name || '',
+          fileType: resource.name?.split('.').pop() || 'unknown',
+          siteName: resource.parentReference?.sharepointIds?.siteUrl?.split('/').filter((s: string) => s).pop() || 'Unknown Site',
+          contentSnippet: summary,
+        };
+      });
       
       logger?.info('✅ [SharePoint Search] Results processed successfully', { 
         totalResults: results.length,
-        fileTypes: results.map((r: any) => r.fileType)
+        fileTypes: results.map((r: any) => r.fileType),
+        sites: results.map((r: any) => r.siteName)
       });
       
       return {
@@ -179,6 +193,12 @@ export const sharepointSearchTool = createTool({
         error: error.message,
         stack: error.stack 
       });
+      
+      // Provide more helpful error messages
+      if (error.message.includes('credentials')) {
+        throw new Error('SharePoint credentials are not properly configured. Please verify SHAREPOINT_TENANT_ID, SHAREPOINT_CLIENT_ID, and SHAREPOINT_CLIENT_SECRET are set correctly.');
+      }
+      
       throw new Error(`SharePoint search failed: ${error.message}`);
     }
   },
