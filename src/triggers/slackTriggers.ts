@@ -240,17 +240,39 @@ export function registerSlackTrigger<
       handler: async (c) => {
         const mastra = c.get("mastra");
         const logger = mastra.getLogger();
+        
+        logger?.info("📝 [Slack Webhook] Received request", { 
+          method: c.req.method,
+          url: c.req.url,
+          headers: Object.fromEntries(c.req.raw.headers.entries())
+        });
+        
         try {
-          const payload = await c.req.json();
+          // Parse JSON payload with error handling
+          let payload: any;
+          try {
+            payload = await c.req.json();
+            logger?.info("📝 [Slack Webhook] Payload parsed successfully");
+          } catch (jsonError) {
+            logger?.error("📝 [Slack Webhook] Failed to parse JSON payload", {
+              error: format(jsonError)
+            });
+            return c.json({ error: "Invalid JSON payload" }, 400);
+          }
           
           // Handle challenge FIRST (before authentication)
           // Slack sends this during Event Subscriptions setup
           if (payload && payload["challenge"]) {
-            logger?.info("📝 [Slack] Responding to challenge verification", { 
+            logger?.info("✅ [Slack Webhook] Responding to challenge verification", { 
               challenge: payload["challenge"] 
             });
             return c.text(payload["challenge"], 200);
           }
+
+          logger?.info("📝 [Slack Webhook] Processing event payload", { 
+            hasEvent: !!payload?.event,
+            eventType: payload?.event?.type
+          });
 
           // Only authenticate after challenge check passes
           const { slack, auth } = await getClient();
@@ -319,10 +341,15 @@ export function registerSlackTrigger<
 
           return c.text("OK", 200);
         } catch (error) {
-          logger?.error("Error handling Slack webhook", {
+          logger?.error("❌ [Slack Webhook] Error handling webhook request", {
             error: format(error),
+            errorMessage: error instanceof Error ? error.message : String(error),
+            errorStack: error instanceof Error ? error.stack : undefined
           });
-          return c.text("Internal Server Error", 500);
+          return c.json({ 
+            error: "Internal Server Error",
+            message: error instanceof Error ? error.message : String(error)
+          }, 500);
         }
       },
     }),
