@@ -421,16 +421,31 @@
       const [input, setInput] = useState('');
       const [loading, setLoading] = useState(false);
       const [initialLoading, setInitialLoading] = useState(true);
+      const [error, setError] = useState('');
       const messagesEndRef = useRef(null);
       
       useEffect(() => {
         fetch('/api/messages', { credentials: 'include' })
-          .then(res => res.json())
+          .then(async res => {
+            if (!res.ok) {
+              if (res.status === 401) {
+                setUser(null);
+                return;
+              }
+              throw new Error('Failed to load messages');
+            }
+            return res.json();
+          })
           .then(data => {
-            setMessages(data);
+            if (data) {
+              setMessages(data);
+            }
             setInitialLoading(false);
           })
-          .catch(() => setInitialLoading(false));
+          .catch((err) => {
+            console.error('Failed to load messages:', err);
+            setInitialLoading(false);
+          });
       }, []);
       
       useEffect(() => {
@@ -446,23 +461,37 @@
         e.preventDefault();
         if (!input.trim() || loading) return;
         
-        const userMessage = { role: 'user', content: input, createdAt: new Date().toISOString() };
+        const currentInput = input;
+        const userMessage = { role: 'user', content: currentInput, createdAt: new Date().toISOString() };
         setMessages(prev => [...prev, userMessage]);
         setInput('');
         setLoading(true);
+        setError('');
         
         try {
           const res = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ message: input }),
+            body: JSON.stringify({ message: currentInput }),
           });
+          
+          if (!res.ok) {
+            if (res.status === 401) {
+              setError('Session expired. Please log in again.');
+              setUser(null);
+              return;
+            }
+            const errorData = await res.json();
+            throw new Error(errorData.error || 'Failed to send message');
+          }
           
           const data = await res.json();
           setMessages(prev => [...prev, { ...data, createdAt: new Date().toISOString() }]);
         } catch (err) {
           console.error('Chat error:', err);
+          setError(err.message || 'Failed to send message. Please try again.');
+          setMessages(prev => prev.slice(0, -1));
         } finally {
           setLoading(false);
         }
@@ -514,6 +543,7 @@
           </div>
           
           <div className="input-area">
+            {error && <div className="error" style={{ marginBottom: '12px' }}>{error}</div>}
             <form className="input-form" onSubmit={handleSubmit}>
               <input
                 type="text"

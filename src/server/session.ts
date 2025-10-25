@@ -1,10 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
+import { randomUUID } from 'crypto';
 
 const sessions = new Map<string, { userId: number; createdAt: number }>();
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000;
 
 export function generateSessionId(): string {
-  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+  return randomUUID();
 }
 
 export function createSession(userId: number): string {
