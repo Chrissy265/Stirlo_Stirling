@@ -123,7 +123,16 @@ To make your bot live and accessible in your Slack workspace:
 1. Click the **Publish** button in Replit
 2. Follow the deployment wizard
 3. Connect your Slack app credentials during deployment
-4. Your bot will be live!
+4. **Configure the Event Subscriptions URL** in Slack:
+   - Go to https://api.slack.com/apps and select your Stirlo bot
+   - Click "Event Subscriptions" in the left sidebar
+   - Enable Events and set the Request URL to:
+     ```
+     https://slack-genius.replit.app/api/webhooks/slack/action
+     ```
+   - Subscribe to these bot events: `message.channels`, `message.im`, `app_mention`
+   - Save changes
+5. Your bot will be live!
 
 **Note:** Changes to the bot code will NOT be reflected in Slack until you republish/redeploy.
 

@@ -235,7 +235,8 @@ export function registerSlackTrigger<
   ) => Promise<WorkflowResult<TState, TInput, TOutput, TSteps> | null>;
 }): Array<ApiRoute> {
   return [
-    registerApiRoute("/webhooks/slack/action", {
+    {
+      path: "/api/webhooks/slack/action",
       method: "POST",
       handler: async (c) => {
         const mastra = c.get("mastra");
@@ -352,7 +353,7 @@ export function registerSlackTrigger<
           }, 500);
         }
       },
-    }),
+    },
     {
       path: "/test/slack",
       method: "GET",
