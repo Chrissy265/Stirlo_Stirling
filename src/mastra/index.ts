@@ -13,7 +13,7 @@ import { intelligentAssistant } from "./agents/intelligentAssistant";
 import { sharepointSearchTool } from "./tools/sharepointSearchTool";
 import { mondaySearchTool, mondayGetUpcomingDeadlinesTool } from "./tools/mondayTool";
 import { ragSearchTool, ragStoreTool } from "./tools/ragTool";
-import { intelligentAssistantWorkflow } from "./workflows/intelligentAssistantWorkflow";
+import { slackIntelligentAssistantWorkflow } from "./workflows/slackIntelligentAssistantWorkflow";
 import { registerSlackTrigger } from "../triggers/slackTriggers";
 import { format } from "node:util";
 
@@ -61,7 +61,7 @@ class ProductionPinoLogger extends MastraLogger {
 export const mastra = new Mastra({
   storage: sharedPostgresStorage,
   // Register your workflows here
-  workflows: { intelligentAssistantWorkflow },
+  workflows: { slackIntelligentAssistantWorkflow },
   // Register your agents here
   agents: { intelligentAssistant },
   mcpServers: {
@@ -180,11 +180,13 @@ export const mastra = new Mastra({
           }
 
           // Run the workflow
-          const run = await mastra.getWorkflow("intelligentAssistantWorkflow").createRunAsync();
+          const run = await mastra.getWorkflow("slackIntelligentAssistantWorkflow").createRunAsync();
           return await run.start({
             inputData: {
-              message: JSON.stringify(payload),
+              message: payload.event.text,
               threadId: `slack/${payload.event.thread_ts || payload.event.ts}`,
+              channel: payload.event.channel,
+              messageTs: payload.event.ts,
             },
           });
         },
