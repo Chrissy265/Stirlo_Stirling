@@ -242,13 +242,19 @@ export function registerSlackTrigger<
         const logger = mastra.getLogger();
         try {
           const payload = await c.req.json();
-          const { slack, auth } = await getClient();
-          const reactToMessage = createReactToMessage({ slack, logger });
-
-          // Handle challenge
+          
+          // Handle challenge FIRST (before authentication)
+          // Slack sends this during Event Subscriptions setup
           if (payload && payload["challenge"]) {
+            logger?.info("📝 [Slack] Responding to challenge verification", { 
+              challenge: payload["challenge"] 
+            });
             return c.text(payload["challenge"], 200);
           }
+
+          // Only authenticate after challenge check passes
+          const { slack, auth } = await getClient();
+          const reactToMessage = createReactToMessage({ slack, logger });
 
           logger?.info("📝 [Slack] payload", { payload });
 
