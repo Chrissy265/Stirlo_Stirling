@@ -238,133 +238,135 @@ export function registerSlackTrigger<
     {
       path: "/api/webhooks/slack/action",
       method: "POST",
-      handler: async (c) => {
-        const mastra = c.get("mastra");
+      createHandler: async ({ mastra }) => {
         const logger = mastra.getLogger();
         
-        logger?.info("📝 [Slack Webhook] Received request", { 
-          method: c.req.method,
-          url: c.req.url,
-          headers: Object.fromEntries(c.req.raw.headers.entries())
-        });
-        
-        try {
-          // Parse JSON payload with error handling
-          let payload: any;
-          try {
-            payload = await c.req.json();
-            logger?.info("📝 [Slack Webhook] Payload parsed successfully");
-          } catch (jsonError) {
-            logger?.error("📝 [Slack Webhook] Failed to parse JSON payload", {
-              error: format(jsonError)
-            });
-            return c.json({ error: "Invalid JSON payload" }, 400);
-          }
+        return async (c) => {
+          logger?.info("📝 [Slack Webhook] Received request", { 
+            method: c.req.method,
+            url: c.req.url,
+            headers: Object.fromEntries(c.req.raw.headers.entries())
+          });
           
-          // Handle challenge FIRST (before authentication)
-          // Slack sends this during Event Subscriptions setup
-          if (payload && payload["challenge"]) {
-            logger?.info("✅ [Slack Webhook] Responding to challenge verification", { 
-              challenge: payload["challenge"] 
-            });
-            return c.text(payload["challenge"], 200);
-          }
-
-          logger?.info("📝 [Slack Webhook] Processing event payload", { 
-            hasEvent: !!payload?.event,
-            eventType: payload?.event?.type
-          });
-
-          // Only authenticate after challenge check passes
-          const { slack, auth } = await getClient();
-          const reactToMessage = createReactToMessage({ slack, logger });
-
-          logger?.info("📝 [Slack] payload", { payload });
-
-          // Augment event with channel info
-          if (payload && payload.event && payload.event.channel) {
+          try {
+            // Parse JSON payload with error handling
+            let payload: any;
             try {
-              const result = await slack.conversations.info({
-                channel: payload.event.channel,
+              payload = await c.req.json();
+              logger?.info("📝 [Slack Webhook] Payload parsed successfully", { payload });
+            } catch (jsonError) {
+              logger?.error("📝 [Slack Webhook] Failed to parse JSON payload", {
+                error: format(jsonError)
               });
-              logger?.info("📝 [Slack] result", { result });
-              payload.channel = result.channel;
-            } catch (error) {
-              logger?.error("Error fetching channel info", {
-                error: format(error),
-              });
-              // Continue processing even if channel info fetch fails
+              return c.json({ error: "Invalid JSON payload" }, 400);
             }
-          }
+            
+            // Handle challenge FIRST (before authentication)
+            // Slack sends this during Event Subscriptions setup
+            if (payload && payload["challenge"]) {
+              logger?.info("✅ [Slack Webhook] Responding to challenge verification", { 
+                challenge: payload["challenge"] 
+              });
+              return c.text(payload["challenge"], 200);
+            }
 
-          // Check subtype
-          if (
-            payload.event?.subtype === "message_changed" ||
-            payload.event?.subtype === "message_deleted"
-          ) {
-            return c.text("OK", 200);
-          }
-
-          if (
-            (payload.event?.channel_type === "im" &&
-              payload.event?.text === "test:ping") ||
-            payload.event?.text === `<@${auth.user_id}> test:ping`
-          ) {
-            // This is a test message to the bot saying just "test:ping", or a mention that contains "test:ping".
-            // We'll reply in the same thread.
-            await slack.chat.postMessage({
-              channel: payload.event.channel,
-              text: "pong",
-              thread_ts: payload.event.ts,
+            logger?.info("📝 [Slack Webhook] Processing event payload", { 
+              hasEvent: !!payload?.event,
+              eventType: payload?.event?.type
             });
-            logger?.info("📝 [Slack] pong");
+
+            // Only authenticate after challenge check passes
+            const { slack, auth } = await getClient();
+            const reactToMessage = createReactToMessage({ slack, logger });
+
+            logger?.info("📝 [Slack] payload", { payload });
+
+            // Augment event with channel info
+            if (payload && payload.event && payload.event.channel) {
+              try {
+                const result = await slack.conversations.info({
+                  channel: payload.event.channel,
+                });
+                logger?.info("📝 [Slack] result", { result });
+                payload.channel = result.channel;
+              } catch (error) {
+                logger?.error("Error fetching channel info", {
+                  error: format(error),
+                });
+                // Continue processing even if channel info fetch fails
+              }
+            }
+
+            // Check subtype
+            if (
+              payload.event?.subtype === "message_changed" ||
+              payload.event?.subtype === "message_deleted"
+            ) {
+              return c.text("OK", 200);
+            }
+
+            if (
+              (payload.event?.channel_type === "im" &&
+                payload.event?.text === "test:ping") ||
+              payload.event?.text === `<@${auth.user_id}> test:ping`
+            ) {
+              // This is a test message to the bot saying just "test:ping", or a mention that contains "test:ping".
+              // We'll reply in the same thread.
+              await slack.chat.postMessage({
+                channel: payload.event.channel,
+                text: "pong",
+                thread_ts: payload.event.ts,
+              });
+              logger?.info("📝 [Slack] pong");
+              return c.text("OK", 200);
+            }
+
+            if (payload.event?.bot_id) {
+              return c.text("OK", 200);
+            }
+
+            if (checkDuplicateEvent(payload.event_id)) {
+              return c.text("OK", 200);
+            }
+
+            const result = await handler(mastra, {
+              type: triggerType,
+              params: {
+                channel: payload.event.channel,
+                channelDisplayName: payload.channel.name,
+              },
+              payload,
+            } as TriggerInfoSlackOnNewMessage);
+
+            await reactToMessage(payload.event.channel, payload.event.ts, result);
+
             return c.text("OK", 200);
+          } catch (error) {
+            logger?.error("❌ [Slack Webhook] Error handling webhook request", {
+              error: format(error),
+              errorMessage: error instanceof Error ? error.message : String(error),
+              errorStack: error instanceof Error ? error.stack : undefined
+            });
+            return c.json({ 
+              error: "Internal Server Error",
+              message: error instanceof Error ? error.message : String(error)
+            }, 500);
           }
-
-          if (payload.event?.bot_id) {
-            return c.text("OK", 200);
-          }
-
-          if (checkDuplicateEvent(payload.event_id)) {
-            return c.text("OK", 200);
-          }
-
-          const result = await handler(mastra, {
-            type: triggerType,
-            params: {
-              channel: payload.event.channel,
-              channelDisplayName: payload.channel.name,
-            },
-            payload,
-          } as TriggerInfoSlackOnNewMessage);
-
-          await reactToMessage(payload.event.channel, payload.event.ts, result);
-
-          return c.text("OK", 200);
-        } catch (error) {
-          logger?.error("❌ [Slack Webhook] Error handling webhook request", {
-            error: format(error),
-            errorMessage: error instanceof Error ? error.message : String(error),
-            errorStack: error instanceof Error ? error.stack : undefined
-          });
-          return c.json({ 
-            error: "Internal Server Error",
-            message: error instanceof Error ? error.message : String(error)
-          }, 500);
-        }
+        };
       },
     },
     {
       path: "/test/slack",
       method: "GET",
-      handler: async (c: Context<Env>) => {
-        return streamSSE(c, async (stream) => {
-          let id = 1;
-          const mastra = c.get("mastra");
-          const logger = mastra.getLogger() ?? {
-            info: console.log,
-            error: console.error,
-          };
+      createHandler: async ({ mastra }) => {
+        const logger = mastra.getLogger() ?? {
+          info: console.log,
+          error: console.error,
+        };
+        
+        return async (c: Context<Env>) => {
+          return streamSSE(c, async (stream) => {
+            let id = 1;
 
           let diagnosisStepAuth: DiagnosisStep = {
             status: "pending",
@@ -626,7 +628,8 @@ export function registerSlackTrigger<
             extra: { lastReplies },
           };
           await updateDiagnosisSteps("error");
-        });
+          });
+        };
       },
     },
   ];
