@@ -1,4 +1,4 @@
-import { openai } from "@ai-sdk/openai";
+import { createOpenAI } from "@ai-sdk/openai";
 import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 import { sharedPostgresStorage } from "../storage";
@@ -17,6 +17,11 @@ import { ragSearchTool, ragStoreTool } from "../tools/ragTool";
  * The agent autonomously determines which tools to use based on user queries
  * and provides context-aware responses by orchestrating multi-step workflows.
  */
+
+const openai = createOpenAI({
+  baseURL: process.env.OPENAI_BASE_URL || undefined,
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export const intelligentAssistant = new Agent({
   name: "Intelligent Slack Assistant",
@@ -71,7 +76,7 @@ When presenting search results:
 Remember: Your goal is to make the team more efficient by providing instant, accurate, and contextual information from across their workplace tools.
   `,
   
-  model: openai("gpt-4o"),
+  model: openai.responses("gpt-4o"),
   
   tools: {
     sharepointSearchTool,
