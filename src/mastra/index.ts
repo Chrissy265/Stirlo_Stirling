@@ -176,33 +176,69 @@ initializeSocketMode({
   mastra,
   handler: async (mastra, triggerInfo) => {
     const logger = mastra.getLogger();
-    logger?.info("📝 [Slack Trigger] Received message", { 
-      channel: triggerInfo.params.channel,
-      channelName: triggerInfo.params.channelDisplayName 
-    });
+    
+    try {
+      logger?.info("📝 [Slack Trigger] Received message", { 
+        channel: triggerInfo.params.channel,
+        channelName: triggerInfo.params.channelDisplayName,
+        eventType: triggerInfo.payload?.event?.type,
+        hasText: !!triggerInfo.payload?.event?.text,
+      });
 
-    // By default, respond only to direct messages or mentions
-    const { payload } = triggerInfo;
-    const isDirectMessage = payload?.event?.channel_type === "im";
-    const botUserId = payload?.authorizations?.[0]?.user_id;
-    const isMention = botUserId && payload?.event?.text?.includes(`<@${botUserId}>`);
-    const shouldRespond = isDirectMessage || isMention;
+      // By default, respond only to direct messages or mentions
+      const { payload } = triggerInfo;
+      const isDirectMessage = payload?.event?.channel_type === "im";
+      const botUserId = payload?.authorizations?.[0]?.user_id;
+      const isMention = botUserId && payload?.event?.text?.includes(`<@${botUserId}>`);
+      const shouldRespond = isDirectMessage || isMention;
 
-    if (!shouldRespond) {
-      logger?.info("📝 [Slack Trigger] Ignoring message (not DM or mention)");
-      return null;
-    }
+      logger?.info("📝 [Slack Trigger] Message evaluation", {
+        isDirectMessage,
+        botUserId,
+        isMention,
+        shouldRespond,
+        messageText: payload?.event?.text?.substring(0, 100),
+      });
 
-    // Run the workflow
-    const run = await mastra.getWorkflow("slackIntelligentAssistantWorkflow").createRunAsync();
-    return await run.start({
-      inputData: {
-        message: payload.event.text,
+      if (!shouldRespond) {
+        logger?.info("📝 [Slack Trigger] Ignoring message (not DM or mention)");
+        return null;
+      }
+
+      // Run the workflow
+      logger?.info("🚀 [Slack Trigger] Starting workflow execution", {
+        workflowId: "slackIntelligentAssistantWorkflow",
         threadId: `slack/${payload.event.thread_ts || payload.event.ts}`,
         channel: payload.event.channel,
         messageTs: payload.event.ts,
-      },
-    });
+      });
+      
+      const run = await mastra.getWorkflow("slackIntelligentAssistantWorkflow").createRunAsync();
+      
+      logger?.info("✅ [Slack Trigger] Workflow run created, starting execution");
+      
+      const result = await run.start({
+        inputData: {
+          message: payload.event.text,
+          threadId: `slack/${payload.event.thread_ts || payload.event.ts}`,
+          channel: payload.event.channel,
+          messageTs: payload.event.ts,
+        },
+      });
+      
+      logger?.info("✅ [Slack Trigger] Workflow execution completed", {
+        result: result ? "success" : "no result",
+      });
+      
+      return result;
+    } catch (error) {
+      logger?.error("❌ [Slack Trigger] Handler failed", {
+        error: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+        errorType: error?.constructor?.name,
+      });
+      throw error;
+    }
   },
 }).catch((error) => {
   const logger = mastra.getLogger();

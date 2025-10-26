@@ -320,7 +320,10 @@ export async function initializeSocketMode<
     logger?.info("📝 [Slack Socket Mode] Received event", { 
       type: body.type,
       envelopeId: body.envelope_id,
-      eventType: body?.payload?.event?.type 
+      hasPayload: !!body.payload,
+      hasEvent: !!body.payload?.event,
+      eventType: body?.payload?.event?.type,
+      payloadKeys: body.payload ? Object.keys(body.payload) : [],
     });
 
     try {

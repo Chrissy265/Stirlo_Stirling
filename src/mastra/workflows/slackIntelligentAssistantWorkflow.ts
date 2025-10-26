@@ -43,29 +43,45 @@ const useAgentStep = createStep({
     const logger = mastra?.getLogger();
     const { message, threadId, channel, messageTs } = inputData;
     
-    logger?.info('🤖 [Slack Workflow] Step 1: Calling intelligent assistant', {
-      threadId,
-      messageLength: message.length,
-    });
-    
-    const { text } = await intelligentAssistant.generate(
-      [{ role: "user", content: message }],
-      {
-        resourceId: "slack-bot",
+    try {
+      logger?.info('🤖 [Slack Workflow] Step 1: Starting agent generation', {
         threadId,
-        maxSteps: 5,
-      }
-    );
-    
-    logger?.info('✅ [Slack Workflow] Step 1: Got response from assistant', {
-      responseLength: text.length,
-    });
-    
-    return {
-      response: text,
-      channel,
-      messageTs,
-    };
+        channel,
+        messageTs,
+        messageLength: message.length,
+        messagePreview: message.substring(0, 100),
+      });
+      
+      const { text } = await intelligentAssistant.generate(
+        [{ role: "user", content: message }],
+        {
+          resourceId: "slack-bot",
+          threadId,
+          maxSteps: 5,
+        }
+      );
+      
+      logger?.info('✅ [Slack Workflow] Step 1: Agent generation completed', {
+        responseLength: text.length,
+        responsePreview: text.substring(0, 200),
+      });
+      
+      return {
+        response: text,
+        channel,
+        messageTs,
+      };
+    } catch (error) {
+      logger?.error('❌ [Slack Workflow] Step 1: Agent generation FAILED', {
+        error: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+        errorType: error?.constructor?.name,
+        threadId,
+        channel,
+        messageTs,
+      });
+      throw error;
+    }
   },
 });
 
@@ -87,40 +103,68 @@ const sendReplyStep = createStep({
     const logger = mastra?.getLogger();
     const { response, channel, messageTs } = inputData;
     
-    logger?.info('💬 [Slack Workflow] Step 2: Sending reply to Slack', {
-      channel,
-      responseLength: response.length,
-    });
-    
-    const { slack } = await getClient();
-    
-    const cleanResponse = stripMarkdownFormatting(response);
-    
-    logger?.info('📝 [Slack Workflow] Step 2: Cleaned response for natural look', {
-      originalLength: response.length,
-      cleanedLength: cleanResponse.length,
-    });
-    
     try {
-      await slack.reactions.remove({
+      logger?.info('💬 [Slack Workflow] Step 2: Starting Slack reply process', {
         channel,
-        timestamp: messageTs,
-        name: "hourglass_flowing_sand",
+        messageTs,
+        responseLength: response.length,
+        responsePreview: response.substring(0, 200),
       });
-      logger?.info('⏳ [Slack Workflow] Removed hourglass reaction');
+      
+      logger?.info('🔌 [Slack Workflow] Step 2: Getting Slack client');
+      const { slack } = await getClient();
+      logger?.info('✅ [Slack Workflow] Step 2: Slack client obtained');
+      
+      const cleanResponse = stripMarkdownFormatting(response);
+      
+      logger?.info('📝 [Slack Workflow] Step 2: Response cleaned for natural formatting', {
+        originalLength: response.length,
+        cleanedLength: cleanResponse.length,
+        cleanedPreview: cleanResponse.substring(0, 200),
+      });
+      
+      try {
+        logger?.info('⏳ [Slack Workflow] Step 2: Removing hourglass reaction');
+        await slack.reactions.remove({
+          channel,
+          timestamp: messageTs,
+          name: "hourglass_flowing_sand",
+        });
+        logger?.info('✅ [Slack Workflow] Step 2: Hourglass reaction removed');
+      } catch (error) {
+        logger?.warn('⚠️  [Slack Workflow] Step 2: Could not remove hourglass reaction', { 
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      
+      logger?.info('📤 [Slack Workflow] Step 2: Posting message to Slack', {
+        channel,
+        threadTs: messageTs,
+        messageLength: cleanResponse.length,
+      });
+      
+      const result = await slack.chat.postMessage({
+        channel,
+        thread_ts: messageTs,
+        text: cleanResponse,
+      });
+      
+      logger?.info('✅ [Slack Workflow] Step 2: Message posted successfully', {
+        messageTs: result.ts,
+        ok: result.ok,
+      });
+      
+      return { success: true };
     } catch (error) {
-      logger?.warn('⚠️  [Slack Workflow] Could not remove hourglass reaction', { error });
+      logger?.error('❌ [Slack Workflow] Step 2: Slack reply FAILED', {
+        error: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+        errorType: error?.constructor?.name,
+        channel,
+        messageTs,
+      });
+      throw error;
     }
-    
-    await slack.chat.postMessage({
-      channel,
-      thread_ts: messageTs,
-      text: cleanResponse,
-    });
-    
-    logger?.info('✅ [Slack Workflow] Step 2: Reply sent successfully');
-    
-    return { success: true };
   },
 });
 
