@@ -259,10 +259,11 @@ export async function initializeSocketMode<
     appToken,
   });
 
-  // Listen to 'message' events
-  socketClient.on("message", async ({ body, ack }) => {
-    logger?.info("📝 [Slack Socket Mode] Received message event", { 
+  // Listen to all Socket Mode events
+  socketClient.on("slack_event", async ({ body, ack }) => {
+    logger?.info("📝 [Slack Socket Mode] Received event", { 
       type: body.type,
+      envelopeId: body.envelope_id,
       eventType: body?.payload?.event?.type 
     });
 
@@ -278,8 +279,17 @@ export async function initializeSocketMode<
         logger?.info("📝 [Slack Socket Mode] Processing event", { 
           eventType: event.type,
           channel: event.channel,
-          user: event.user
+          user: event.user,
+          text: event.text?.substring(0, 50)
         });
+
+        // Only process message and app_mention events
+        if (event.type !== "message" && event.type !== "app_mention") {
+          logger?.info("📝 [Slack Socket Mode] Ignoring non-message event", { 
+            eventType: event.type 
+          });
+          return;
+        }
 
         // Ignore message subtypes we don't want
         if (
