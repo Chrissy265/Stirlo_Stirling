@@ -272,7 +272,8 @@ export async function initializeSocketMode<
       await ack();
 
       // Handle the event - Socket Mode wraps events in a payload object
-      if (body.type === "events_api" && body.payload?.event) {
+      // Slack sends either "events_api" or "event_callback" depending on the event source
+      if ((body.type === "events_api" || body.type === "event_callback") && body.payload?.event) {
         const event = body.payload.event;
         const payload = body.payload;
 
