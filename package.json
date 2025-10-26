@@ -19,7 +19,7 @@
     "node": ">=20.9.0"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^1.3.24",
+    "@ai-sdk/openai": "^2.0.53",
     "@inngest/realtime": "^0.3.1",
     "@mastra/core": "^0.20.0",
     "@mastra/inngest": "^0.16.0",
