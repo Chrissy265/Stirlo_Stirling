@@ -3,16 +3,25 @@ import { z } from "zod";
 import { intelligentAssistant } from "../agents/intelligentAssistant";
 import { getClient } from "../../triggers/slackTriggers";
 
-function stripMarkdownFormatting(text: string): string {
+function convertMarkdownToSlackFormat(text: string): string {
   return text
+    // Convert Markdown links [text](url) to Slack format <url|text>
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<$2|$1>')
+    // Remove bold formatting ** **
     .replace(/\*\*([^*]+)\*\*/g, '$1')
+    // Remove italic formatting * *
     .replace(/\*([^*]+)\*/g, '$1')
+    // Remove italic formatting _ _
     .replace(/_([^_]+)_/g, '$1')
+    // Remove code formatting ` `
     .replace(/`([^`]+)`/g, '$1')
+    // Remove strikethrough ~~ ~~
     .replace(/~~([^~]+)~~/g, '$1')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    // Remove heading markers #
     .replace(/^#+\s+/gm, '')
+    // Convert Markdown bullets to simple bullets
     .replace(/^[-*+]\s+/gm, '• ')
+    // Preserve numbered lists
     .replace(/^\d+\.\s+/gm, (match, offset, string) => {
       const lineStart = string.lastIndexOf('\n', offset) + 1;
       const num = string.substring(lineStart, offset).match(/\d+/)?.[0] || '1';
@@ -115,7 +124,7 @@ const sendReplyStep = createStep({
       const { slack } = await getClient();
       logger?.info('✅ [Slack Workflow] Step 2: Slack client obtained');
       
-      const cleanResponse = stripMarkdownFormatting(response);
+      const cleanResponse = convertMarkdownToSlackFormat(response);
       
       logger?.info('📝 [Slack Workflow] Step 2: Response cleaned for natural formatting', {
         originalLength: response.length,
