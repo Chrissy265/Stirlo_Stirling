@@ -61,6 +61,19 @@ type DiagnosisStep =
     };
 
 export async function getClient() {
+  // Check for manual environment variable first (user-provided secrets)
+  const manualToken = process.env.SLACK_BOT_TOKEN;
+  
+  if (manualToken) {
+    // Use manually configured token from Replit Secrets
+    console.log("🔌 [Slack] Using SLACK_BOT_TOKEN from environment");
+    const slack = new WebClient(manualToken);
+    const response = await slack.auth.test();
+    return { slack, auth: response, user: undefined };
+  }
+
+  // Fall back to connector approach if no manual token
+  console.log("🔌 [Slack] SLACK_BOT_TOKEN not found in environment, trying connector");
   let connectionSettings: any;
   async function getAccessToken() {
     if (
@@ -112,6 +125,7 @@ export async function getClient() {
   }
 
   const { token, user } = await getAccessToken();
+  console.log("🔌 [Slack] Using bot token from connector");
   const slack = new WebClient(token);
 
   const response = await slack.auth.test();
@@ -239,10 +253,52 @@ export async function initializeSocketMode<
   
   logger?.info("🔌 [Slack Socket Mode] Initializing Socket Mode connection");
 
-  // Get the app token from environment
-  const appToken = process.env.SLACK_APP_TOKEN;
+  // Try to get app token from manual environment variable first
+  let appToken = process.env.SLACK_APP_TOKEN;
+  
   if (!appToken) {
-    throw new Error("SLACK_APP_TOKEN not found in environment variables");
+    // Fall back to connector approach for app token
+    logger?.info("🔌 [Slack Socket Mode] SLACK_APP_TOKEN not found in environment, trying connector");
+    
+    const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+    const xReplitToken = process.env.REPL_IDENTITY
+      ? "repl " + process.env.REPL_IDENTITY
+      : process.env.WEB_REPL_RENEWAL
+        ? "depl " + process.env.WEB_REPL_RENEWAL
+        : null;
+
+    if (xReplitToken && hostname) {
+      try {
+        const res = await fetch(
+          "https://" +
+            hostname +
+            "/api/v2/connection?include_secrets=true&connector_names=slack-agent",
+          {
+            headers: {
+              Accept: "application/json",
+              X_REPLIT_TOKEN: xReplitToken,
+            },
+          },
+        );
+        const resJson = await res.json();
+        const connectionSettings = resJson?.items?.[0];
+        
+        if (connectionSettings?.settings?.app_token) {
+          appToken = connectionSettings.settings.app_token;
+          logger?.info("🔌 [Slack Socket Mode] Using app token from connector");
+        }
+      } catch (error) {
+        logger?.warn("🔌 [Slack Socket Mode] Failed to fetch app token from connector", {
+          error: format(error),
+        });
+      }
+    }
+  } else {
+    logger?.info("🔌 [Slack Socket Mode] Using SLACK_APP_TOKEN from environment");
+  }
+
+  if (!appToken) {
+    throw new Error("SLACK_APP_TOKEN not found in environment variables or connector settings");
   }
 
   // Get Slack client
