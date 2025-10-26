@@ -317,13 +317,11 @@ export async function initializeSocketMode<
 
   // Listen to all Socket Mode events
   socketClient.on("slack_event", async ({ body, ack }) => {
-    logger?.info("📝 [Slack Socket Mode] Received event", { 
+    logger?.info("📝 [Slack Socket Mode] Received event - FULL BODY", { 
       type: body.type,
       envelopeId: body.envelope_id,
-      hasPayload: !!body.payload,
-      hasEvent: !!body.payload?.event,
-      eventType: body?.payload?.event?.type,
-      payloadKeys: body.payload ? Object.keys(body.payload) : [],
+      bodyKeys: Object.keys(body),
+      fullBody: JSON.stringify(body, null, 2),
     });
 
     try {
