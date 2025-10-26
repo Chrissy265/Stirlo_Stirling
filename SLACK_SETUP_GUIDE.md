@@ -2,9 +2,15 @@
 
 ## Overview
 
-Your Stirlo Intelligent Assistant is now connected to Slack! The bot uses the same AI agent that powers the web interface, giving Slack users access to SharePoint search, Monday.com integration, and RAG-powered conversation history.
+Your Stirlo Intelligent Assistant is now connected to Slack using **Socket Mode**! The bot maintains a persistent WebSocket connection to Slack, eliminating the need for webhook configuration. It uses the same AI agent that powers the web interface, giving Slack users access to SharePoint search, Monday.com integration, and RAG-powered conversation history.
 
 ## What's Configured
+
+✅ **Socket Mode Connection**
+- Persistent WebSocket connection to Slack
+- No webhook URLs needed
+- Works behind firewalls
+- Real-time event delivery
 
 ✅ **Slack Workflow** (`slackIntelligentAssistantWorkflow`)
 - Step 1: Calls the intelligent assistant with user messages
@@ -12,7 +18,7 @@ Your Stirlo Intelligent Assistant is now connected to Slack! The bot uses the sa
 - Automatically strips markdown formatting (no asterisks or bold text)
 - Clean, conversational replies
 
-✅ **Slack Trigger**
+✅ **Message Handling**
 - Responds to direct messages (DMs)
 - Responds when @mentioned in channels
 - Adds ⏳ hourglass reaction while processing
@@ -24,6 +30,60 @@ Your Stirlo Intelligent Assistant is now connected to Slack! The bot uses the sa
 - Monday.com task and project queries
 - RAG semantic search over past conversations
 - Persistent memory using PostgreSQL
+
+## Slack App Configuration (Socket Mode)
+
+Your Slack app must be configured with Socket Mode enabled. If you haven't done this yet:
+
+### 1. Enable Socket Mode
+
+1. Go to [https://api.slack.com/apps](https://api.slack.com/apps)
+2. Select your **Stirlo** app
+3. Click **Socket Mode** in the left sidebar (under "Settings")
+4. Toggle **Enable Socket Mode** to ON
+5. Click **Save Changes**
+
+### 2. Generate App-Level Token
+
+Socket Mode requires an app-level token (different from your bot token):
+
+1. In Socket Mode settings, find "App-Level Tokens"
+2. Click **Generate Token and Scopes**
+3. Give it a name like "Stirlo Socket Token"
+4. Add the scope: `connections:write`
+5. Click **Generate**
+6. Copy the token (starts with `xapp-`) - this is your `SLACK_APP_TOKEN`
+
+### 3. Disable Event Subscriptions (Webhooks)
+
+Since you're using Socket Mode, webhooks are not needed:
+
+1. Click **Event Subscriptions** in the left sidebar
+2. Toggle **Enable Events** to OFF
+3. Click **Save Changes**
+
+### 4. Required Secrets
+
+Your app needs these three environment secrets:
+
+- `SLACK_BOT_TOKEN` - Bot user OAuth token (starts with `xoxb-`)
+- `SLACK_SIGNING_SECRET` - Signing secret for request verification
+- `SLACK_APP_TOKEN` - App-level token for Socket Mode (starts with `xapp-`)
+
+All three should already be configured in your Replit Secrets.
+
+### 5. Subscribe to Bot Events
+
+Even with Socket Mode, you need to subscribe to the events your bot will receive:
+
+1. Go to **Event Subscriptions** in the Slack app settings
+2. Scroll down to "Subscribe to bot events"
+3. Make sure these events are enabled:
+   - `message.channels` - Messages in channels
+   - `message.im` - Direct messages
+   - `app_mention` - When the bot is @mentioned
+4. Click **Save Changes**
+5. **Reinstall the app** to your workspace if prompted
 
 ## Testing Your Bot
 
@@ -44,10 +104,13 @@ Your Stirlo Intelligent Assistant is now connected to Slack! The bot uses the sa
 
 ### Option 2: Test in Your Slack Workspace
 
-1. **Add the bot to a channel:**
-   - Go to your Slack workspace
-   - Find your app/bot
-   - Invite it to a test channel: `/invite @YourBotName`
+1. **Check Socket Mode Connection:**
+   - Look for this in your Replit logs:
+     ```
+     🔌 [Slack Socket Mode] Bot authenticated
+     🚀 [Slack Socket Mode] Socket Mode client started successfully
+     ```
+   - If you see these logs, Socket Mode is connected!
 
 2. **Send a direct message:**
    - Open a DM with your bot
@@ -55,9 +118,9 @@ Your Stirlo Intelligent Assistant is now connected to Slack! The bot uses the sa
    - The bot should add a ⏳ reaction and then respond
 
 3. **Mention in a channel:**
-   - In any channel where the bot is present
+   - Invite the bot to a channel: `/invite @YourBotName`
    - Type: "@YourBotName what tasks do I have on Monday.com?"
-   - The bot will respond in a thread
+   - The bot will respond
 
 ## Response Format
 
@@ -120,19 +183,11 @@ Your Slack bot can:
 
 To make your bot live and accessible in your Slack workspace:
 
-1. Click the **Publish** button in Replit
-2. Follow the deployment wizard
-3. Connect your Slack app credentials during deployment
-4. **Configure the Event Subscriptions URL** in Slack:
-   - Go to https://api.slack.com/apps and select your Stirlo bot
-   - Click "Event Subscriptions" in the left sidebar
-   - Enable Events and set the Request URL to:
-     ```
-     https://slack-genius.replit.app/api/webhooks/slack/action
-     ```
-   - Subscribe to these bot events: `message.channels`, `message.im`, `app_mention`
-   - Save changes
-5. Your bot will be live!
+1. **Ensure Socket Mode is enabled** in your Slack app (see above)
+2. **Verify all secrets are set** (`SLACK_BOT_TOKEN`, `SLACK_SIGNING_SECRET`, `SLACK_APP_TOKEN`)
+3. Click the **Publish** button in Replit
+4. Follow the deployment wizard
+5. Your bot will automatically connect via Socket Mode - no webhook configuration needed!
 
 **Note:** Changes to the bot code will NOT be reflected in Slack until you republish/redeploy.
 
@@ -140,22 +195,45 @@ To make your bot live and accessible in your Slack workspace:
 
 All bot interactions are logged with detailed information:
 
-- `📝 [Slack Trigger]` - Incoming message received
-- `🤖 [Slack Workflow] Step 1` - Calling the intelligent assistant
-- `✅ [Slack Workflow] Step 1` - Got response from assistant
-- `💬 [Slack Workflow] Step 2` - Sending reply to Slack
-- `⏳ [Slack Workflow]` - Reaction management
-- `✅ [Slack Workflow] Step 2` - Reply sent successfully
+### Socket Mode Connection:
+- `🔌 [Slack Socket Mode] Initializing Socket Mode connection` - Starting up
+- `🔌 [Slack Socket Mode] Bot authenticated` - Successfully authenticated with Slack
+- `🚀 [Slack Socket Mode] Socket Mode client started successfully` - Connection established
+- `✅ [Slack Socket Mode] Connected and ready` - Ready to receive messages
+
+### Message Handling:
+- `📝 [Slack Socket Mode] Received message event` - Incoming message
+- `📝 [Slack Socket Mode] Processing event` - Handling the message
+- `📝 [Slack Socket Mode] Handler completed` - Workflow finished
+- `📝 [Slack Trigger]` - Workflow trigger logged
+
+### Errors:
+- `❌ [Slack Socket Mode] Error processing event` - Event handling error
+- `❌ [Slack Socket Mode] Socket error` - Connection error
+- `⚠️ [Slack Socket Mode] Disconnected from Slack` - Connection lost (will auto-reconnect)
 
 Check the workflow logs in Replit to debug any issues.
 
 ## Troubleshooting
 
-### Bot doesn't respond
-- Verify SLACK_BOT_TOKEN and SLACK_SIGNING_SECRET are set
+### Socket Mode not connecting
+- Verify `SLACK_APP_TOKEN` is set in Replit Secrets
+- Check that Socket Mode is enabled in your Slack app
+- Ensure the app-level token has `connections:write` scope
+- Look for connection errors in the logs
+
+### Bot doesn't respond to messages
+- Verify `SLACK_BOT_TOKEN` is set
 - Check that the bot is invited to the channel
+- Ensure bot events are subscribed: `message.channels`, `message.im`, `app_mention`
 - Look for errors in the workflow logs
-- Ensure the Mastra server is running
+- Verify the Mastra server is running
+
+### "SLACK_APP_TOKEN not found" error
+- You need to generate an app-level token in Slack
+- Go to Socket Mode settings → Generate Token
+- Add the scope `connections:write`
+- Copy the token to Replit Secrets as `SLACK_APP_TOKEN`
 
 ### Bot responds with raw markdown
 - This shouldn't happen - the workflow strips markdown
@@ -166,13 +244,19 @@ Check the workflow logs in Replit to debug any issues.
 - Check for errors in Step 2 of the workflow logs
 
 ### Bot responds to every message
-- The trigger is configured to only respond to DMs and @mentions
-- If it's responding to everything, check src/mastra/index.ts trigger logic
+- The handler is configured to only respond to DMs and @mentions
+- If it's responding to everything, check src/mastra/index.ts Socket Mode handler logic
+
+### Socket Mode keeps disconnecting
+- This is normal - Socket Mode will automatically reconnect
+- Look for "Connected and ready" log messages
+- If it never reconnects, check your `SLACK_APP_TOKEN`
 
 ## Files Reference
 
+- **Socket Mode Initialization**: `src/mastra/index.ts` (initializeSocketMode call at bottom)
+- **Socket Mode Handler**: `src/triggers/slackTriggers.ts` (initializeSocketMode function)
 - **Workflow**: `src/mastra/workflows/slackIntelligentAssistantWorkflow.ts`
-- **Trigger**: `src/mastra/index.ts` (registerSlackTrigger section)
 - **Agent**: `src/mastra/agents/intelligentAssistant.ts`
 - **Tools**: `src/mastra/tools/` (SharePoint, Monday, RAG)
 
@@ -186,11 +270,12 @@ Check the workflow logs in Replit to debug any issues.
 ## Support
 
 If you encounter issues:
-1. Check the workflow logs in Replit
-2. Verify all environment variables are set
+1. Check the workflow logs in Replit for Socket Mode connection status
+2. Verify all environment variables are set (especially `SLACK_APP_TOKEN`)
 3. Test in the Playground first before testing in Slack
-4. Ensure you've published/deployed after making code changes
+4. Ensure Socket Mode is enabled in your Slack app settings
+5. Make sure you've published/deployed after making code changes
 
 ---
 
-**Your Stirlo bot is ready to assist your team in Slack! 🎉**
+**Your Stirlo bot is ready to assist your team in Slack via Socket Mode! 🎉**

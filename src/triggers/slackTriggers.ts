@@ -11,11 +11,10 @@ import {
   ErrorCode,
   WebClient,
 } from "@slack/web-api";
+import { SocketModeClient } from "@slack/socket-mode";
 import type { Context, Handler, MiddlewareHandler } from "hono";
 import { streamSSE } from "hono/streaming";
 import type { z } from "zod";
-
-import { registerApiRoute } from "../mastra/inngest";
 
 export type Methods = "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "ALL";
 
@@ -218,155 +217,201 @@ function createReactToMessage<
   };
 }
 
-export function registerSlackTrigger<
-  Env extends { Variables: { mastra: Mastra } },
+// Socket Mode implementation for Slack
+let socketClient: SocketModeClient | null = null;
+
+export async function initializeSocketMode<
   TState extends z.ZodObject<any>,
   TInput extends z.ZodType<any>,
   TOutput extends z.ZodType<any>,
   TSteps extends Step<string, any, any>[],
 >({
-  triggerType,
+  mastra,
   handler,
 }: {
-  triggerType: string;
+  mastra: Mastra;
   handler: (
     mastra: Mastra,
     triggerInfo: TriggerInfoSlackOnNewMessage,
   ) => Promise<WorkflowResult<TState, TInput, TOutput, TSteps> | null>;
-}): Array<ApiRoute> {
-  return [
-    {
-      path: "/api/webhooks/slack/action",
-      method: "POST",
-      createHandler: async ({ mastra }) => {
-        const logger = mastra.getLogger();
-        
-        return async (c) => {
-          logger?.info("📝 [Slack Webhook] Received request", { 
-            method: c.req.method,
-            url: c.req.url,
-            headers: Object.fromEntries(c.req.raw.headers.entries())
+}) {
+  const logger = mastra.getLogger();
+  
+  logger?.info("🔌 [Slack Socket Mode] Initializing Socket Mode connection");
+
+  // Get the app token from environment
+  const appToken = process.env.SLACK_APP_TOKEN;
+  if (!appToken) {
+    throw new Error("SLACK_APP_TOKEN not found in environment variables");
+  }
+
+  // Get Slack client
+  const { slack, auth } = await getClient();
+  const reactToMessage = createReactToMessage({ slack, logger });
+
+  logger?.info("🔌 [Slack Socket Mode] Bot authenticated", { 
+    botId: auth.bot_id, 
+    userId: auth.user_id 
+  });
+
+  // Create Socket Mode client
+  socketClient = new SocketModeClient({ 
+    appToken,
+  });
+
+  // Listen to 'message' events
+  socketClient.on("message", async ({ body, ack }) => {
+    logger?.info("📝 [Slack Socket Mode] Received message event", { 
+      type: body.type,
+      eventType: body?.payload?.event?.type 
+    });
+
+    try {
+      // Acknowledge the event immediately
+      await ack();
+
+      // Handle the event - Socket Mode wraps events in a payload object
+      if (body.type === "events_api" && body.payload?.event) {
+        const event = body.payload.event;
+        const payload = body.payload;
+
+        logger?.info("📝 [Slack Socket Mode] Processing event", { 
+          eventType: event.type,
+          channel: event.channel,
+          user: event.user
+        });
+
+        // Ignore message subtypes we don't want
+        if (
+          event.subtype === "message_changed" ||
+          event.subtype === "message_deleted"
+        ) {
+          logger?.info("📝 [Slack Socket Mode] Ignoring message subtype", { 
+            subtype: event.subtype 
           });
-          
+          return;
+        }
+
+        // Ignore bot messages
+        if (event.bot_id) {
+          logger?.info("📝 [Slack Socket Mode] Ignoring bot message");
+          return;
+        }
+
+        // Check for duplicates
+        if (checkDuplicateEvent(payload.event_id)) {
+          logger?.info("📝 [Slack Socket Mode] Duplicate event, ignoring");
+          return;
+        }
+
+        // Handle test:ping command
+        if (
+          (event.channel_type === "im" && event.text === "test:ping") ||
+          event.text === `<@${auth.user_id}> test:ping`
+        ) {
+          await slack.chat.postMessage({
+            channel: event.channel,
+            text: "pong",
+            thread_ts: event.ts,
+          });
+          logger?.info("📝 [Slack Socket Mode] pong");
+          return;
+        }
+
+        // Get channel info
+        let channelInfo: any = {};
+        if (event.channel) {
           try {
-            // Parse JSON payload with error handling
-            let payload: any;
-            try {
-              payload = await c.req.json();
-              logger?.info("📝 [Slack Webhook] Payload parsed successfully", { payload });
-            } catch (jsonError) {
-              logger?.error("📝 [Slack Webhook] Failed to parse JSON payload", {
-                error: format(jsonError)
-              });
-              return c.json({ error: "Invalid JSON payload" }, 400);
-            }
-            
-            // Handle challenge FIRST (before authentication)
-            // Slack sends this during Event Subscriptions setup
-            if (payload && payload["challenge"]) {
-              logger?.info("✅ [Slack Webhook] Responding to challenge verification", { 
-                challenge: payload["challenge"] 
-              });
-              return c.text(payload["challenge"], 200);
-            }
-
-            logger?.info("📝 [Slack Webhook] Processing event payload", { 
-              hasEvent: !!payload?.event,
-              eventType: payload?.event?.type
+            const result = await slack.conversations.info({
+              channel: event.channel,
             });
-
-            // Only authenticate after challenge check passes
-            const { slack, auth } = await getClient();
-            const reactToMessage = createReactToMessage({ slack, logger });
-
-            logger?.info("📝 [Slack] payload", { payload });
-
-            // Augment event with channel info
-            if (payload && payload.event && payload.event.channel) {
-              try {
-                const result = await slack.conversations.info({
-                  channel: payload.event.channel,
-                });
-                logger?.info("📝 [Slack] result", { result });
-                payload.channel = result.channel;
-              } catch (error) {
-                logger?.error("Error fetching channel info", {
-                  error: format(error),
-                });
-                // Continue processing even if channel info fetch fails
-              }
-            }
-
-            // Check subtype
-            if (
-              payload.event?.subtype === "message_changed" ||
-              payload.event?.subtype === "message_deleted"
-            ) {
-              return c.text("OK", 200);
-            }
-
-            if (
-              (payload.event?.channel_type === "im" &&
-                payload.event?.text === "test:ping") ||
-              payload.event?.text === `<@${auth.user_id}> test:ping`
-            ) {
-              // This is a test message to the bot saying just "test:ping", or a mention that contains "test:ping".
-              // We'll reply in the same thread.
-              await slack.chat.postMessage({
-                channel: payload.event.channel,
-                text: "pong",
-                thread_ts: payload.event.ts,
-              });
-              logger?.info("📝 [Slack] pong");
-              return c.text("OK", 200);
-            }
-
-            if (payload.event?.bot_id) {
-              return c.text("OK", 200);
-            }
-
-            if (checkDuplicateEvent(payload.event_id)) {
-              return c.text("OK", 200);
-            }
-
-            const result = await handler(mastra, {
-              type: triggerType,
-              params: {
-                channel: payload.event.channel,
-                channelDisplayName: payload.channel.name,
-              },
-              payload,
-            } as TriggerInfoSlackOnNewMessage);
-
-            await reactToMessage(payload.event.channel, payload.event.ts, result);
-
-            return c.text("OK", 200);
+            channelInfo = result.channel;
+            logger?.info("📝 [Slack Socket Mode] Got channel info", { 
+              channelName: channelInfo.name 
+            });
           } catch (error) {
-            logger?.error("❌ [Slack Webhook] Error handling webhook request", {
+            logger?.error("📝 [Slack Socket Mode] Error fetching channel info", {
               error: format(error),
-              errorMessage: error instanceof Error ? error.message : String(error),
-              errorStack: error instanceof Error ? error.stack : undefined
             });
-            return c.json({ 
-              error: "Internal Server Error",
-              message: error instanceof Error ? error.message : String(error)
-            }, 500);
           }
-        };
-      },
-    },
-    {
-      path: "/test/slack",
-      method: "GET",
-      createHandler: async ({ mastra }) => {
-        const logger = mastra.getLogger() ?? {
-          info: console.log,
-          error: console.error,
-        };
-        
-        return async (c: Context<Env>) => {
-          return streamSSE(c, async (stream) => {
-            let id = 1;
+        }
+
+        // React with hourglass to show processing
+        try {
+          await slack.reactions.add({
+            channel: event.channel,
+            timestamp: event.ts,
+            name: "hourglass_flowing_sand",
+          });
+        } catch (error) {
+          logger?.error("📝 [Slack Socket Mode] Error adding reaction", {
+            error: format(error),
+          });
+        }
+
+        // Call the handler with the correct payload structure
+        const result = await handler(mastra, {
+          type: "slack/message.channels",
+          params: {
+            channel: event.channel,
+            channelDisplayName: channelInfo.name || event.channel,
+          },
+          payload: payload,
+        });
+
+        logger?.info("📝 [Slack Socket Mode] Handler completed", { 
+          status: result?.status 
+        });
+
+        // React based on result
+        await reactToMessage(event.channel, event.ts, result);
+      }
+    } catch (error) {
+      logger?.error("❌ [Slack Socket Mode] Error processing event", {
+        error: format(error),
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+      });
+    }
+  });
+
+  // Listen to errors
+  socketClient.on("error", (error) => {
+    logger?.error("❌ [Slack Socket Mode] Socket error", {
+      error: format(error),
+    });
+  });
+
+  // Listen to disconnection
+  socketClient.on("disconnect", () => {
+    logger?.warn("⚠️ [Slack Socket Mode] Disconnected from Slack");
+  });
+
+  // Listen to reconnection
+  socketClient.on("ready", () => {
+    logger?.info("✅ [Slack Socket Mode] Connected and ready");
+  });
+
+  // Start the client
+  await socketClient.start();
+  
+  logger?.info("🚀 [Slack Socket Mode] Socket Mode client started successfully");
+}
+
+// Diagnostic test endpoint
+export function getSlackTestRoute(): ApiRoute {
+  return {
+    path: "/test/slack",
+    method: "GET",
+    createHandler: async ({ mastra }) => {
+      const logger = mastra.getLogger() ?? {
+        info: console.log,
+        error: console.error,
+      };
+      
+      return async (c: Context<any>) => {
+        return streamSSE(c, async (stream) => {
+          let id = 1;
 
           let diagnosisStepAuth: DiagnosisStep = {
             status: "pending",
@@ -628,9 +673,8 @@ export function registerSlackTrigger<
             extra: { lastReplies },
           };
           await updateDiagnosisSteps("error");
-          });
-        };
-      },
+        });
+      };
     },
-  ];
+  };
 }

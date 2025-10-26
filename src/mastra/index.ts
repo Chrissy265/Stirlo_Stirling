@@ -14,7 +14,7 @@ import { sharepointSearchTool } from "./tools/sharepointSearchTool";
 import { mondaySearchTool, mondayGetUpcomingDeadlinesTool } from "./tools/mondayTool";
 import { ragSearchTool, ragStoreTool } from "./tools/ragTool";
 import { slackIntelligentAssistantWorkflow } from "./workflows/slackIntelligentAssistantWorkflow";
-import { registerSlackTrigger } from "../triggers/slackTriggers";
+import { initializeSocketMode, getSlackTestRoute } from "../triggers/slackTriggers";
 import { format } from "node:util";
 
 class ProductionPinoLogger extends MastraLogger {
@@ -83,6 +83,7 @@ export const mastra = new Mastra({
     // entrypoint.
     externals: [
       "@slack/web-api",
+      "@slack/socket-mode",
       "inngest",
       "inngest/hono",
       "hono",
@@ -137,60 +138,8 @@ export const mastra = new Mastra({
         // 3. Establishing a publish-subscribe system for real-time monitoring
         //    through the workflow:${workflowId}:${runId} channel
       },
-      // Register Slack trigger for the intelligent assistant
-      ...registerSlackTrigger({
-        triggerType: "slack/message.channels",
-        handler: async (mastra, triggerInfo) => {
-          const logger = mastra.getLogger();
-          logger?.info("📝 [Slack Trigger] Received message", { 
-            channel: triggerInfo.params.channel,
-            channelName: triggerInfo.params.channelDisplayName 
-          });
-
-          // By default, respond only to direct messages or mentions
-          const { payload } = triggerInfo;
-          const isDirectMessage = payload?.event?.channel_type === "im";
-          const botUserId = payload?.authorizations?.[0]?.user_id;
-          const isMention = botUserId && payload?.event?.text?.includes(`<@${botUserId}>`);
-          const shouldRespond = isDirectMessage || isMention;
-
-          if (!shouldRespond) {
-            logger?.info("📝 [Slack Trigger] Ignoring message (not DM or mention)");
-            return null;
-          }
-
-          const channel = payload?.event?.channel;
-          const timestamp = payload?.event?.ts;
-
-          // React with hourglass to show processing
-          if (channel && timestamp) {
-            try {
-              const { getClient } = await import("../triggers/slackTriggers");
-              const { slack } = await getClient();
-              await slack.reactions.add({
-                channel,
-                timestamp,
-                name: "hourglass_flowing_sand",
-              });
-            } catch (error) {
-              logger?.error("📝 [Slack Trigger] Error adding reaction", {
-                error: format(error),
-              });
-            }
-          }
-
-          // Run the workflow
-          const run = await mastra.getWorkflow("slackIntelligentAssistantWorkflow").createRunAsync();
-          return await run.start({
-            inputData: {
-              message: payload.event.text,
-              threadId: `slack/${payload.event.thread_ts || payload.event.ts}`,
-              channel: payload.event.channel,
-              messageTs: payload.event.ts,
-            },
-          });
-        },
-      }),
+      // Diagnostic test endpoint for Slack
+      getSlackTestRoute(),
     ],
   },
   logger:
@@ -220,3 +169,46 @@ if (Object.keys(mastra.getAgents()).length > 1) {
     "More than 1 agents found. Currently, more than 1 agents are not supported in the UI, since doing so will cause app state to be inconsistent.",
   );
 }
+
+// Initialize Slack Socket Mode connection
+// This connects to Slack via WebSocket instead of webhooks
+initializeSocketMode({
+  mastra,
+  handler: async (mastra, triggerInfo) => {
+    const logger = mastra.getLogger();
+    logger?.info("📝 [Slack Trigger] Received message", { 
+      channel: triggerInfo.params.channel,
+      channelName: triggerInfo.params.channelDisplayName 
+    });
+
+    // By default, respond only to direct messages or mentions
+    const { payload } = triggerInfo;
+    const isDirectMessage = payload?.event?.channel_type === "im";
+    const botUserId = payload?.authorizations?.[0]?.user_id;
+    const isMention = botUserId && payload?.event?.text?.includes(`<@${botUserId}>`);
+    const shouldRespond = isDirectMessage || isMention;
+
+    if (!shouldRespond) {
+      logger?.info("📝 [Slack Trigger] Ignoring message (not DM or mention)");
+      return null;
+    }
+
+    // Run the workflow
+    const run = await mastra.getWorkflow("slackIntelligentAssistantWorkflow").createRunAsync();
+    return await run.start({
+      inputData: {
+        message: payload.event.text,
+        threadId: `slack/${payload.event.thread_ts || payload.event.ts}`,
+        channel: payload.event.channel,
+        messageTs: payload.event.ts,
+      },
+    });
+  },
+}).catch((error) => {
+  const logger = mastra.getLogger();
+  logger?.error("❌ [Slack Socket Mode] Failed to initialize", {
+    error: format(error),
+    errorMessage: error instanceof Error ? error.message : String(error),
+    errorStack: error instanceof Error ? error.stack : undefined,
+  });
+});
