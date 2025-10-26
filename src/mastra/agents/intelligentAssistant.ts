@@ -1,4 +1,4 @@
-import { createOpenAI } from "@ai-sdk/openai";
+import { openai } from "@ai-sdk/openai";
 import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 import { sharedPostgresStorage } from "../storage";
@@ -17,11 +17,6 @@ import { ragSearchTool, ragStoreTool } from "../tools/ragTool";
  * The agent autonomously determines which tools to use based on user queries
  * and provides context-aware responses by orchestrating multi-step workflows.
  */
-
-const openai = createOpenAI({
-  baseURL: process.env.OPENAI_BASE_URL || undefined,
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 export const intelligentAssistant = new Agent({
   name: "Intelligent Slack Assistant",
