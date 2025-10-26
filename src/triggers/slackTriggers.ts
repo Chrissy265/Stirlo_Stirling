@@ -317,22 +317,21 @@ export async function initializeSocketMode<
 
   // Listen to all Socket Mode events
   socketClient.on("slack_event", async ({ body, ack }) => {
-    logger?.info("📝 [Slack Socket Mode] Received event - FULL BODY", { 
+    logger?.info("📝 [Slack Socket Mode] Received event", { 
       type: body.type,
-      envelopeId: body.envelope_id,
-      bodyKeys: Object.keys(body),
-      fullBody: JSON.stringify(body, null, 2),
+      eventType: body.event?.type,
+      channel: body.event?.channel,
     });
 
     try {
       // Acknowledge the event immediately
       await ack();
 
-      // Handle the event - Socket Mode wraps events in a payload object
+      // Handle the event - Socket Mode sends events directly on body.event
       // Slack sends either "events_api" or "event_callback" depending on the event source
-      if ((body.type === "events_api" || body.type === "event_callback") && body.payload?.event) {
-        const event = body.payload.event;
-        const payload = body.payload;
+      if ((body.type === "events_api" || body.type === "event_callback") && body.event) {
+        const event = body.event;
+        const payload = body;
 
         logger?.info("📝 [Slack Socket Mode] Processing event", { 
           eventType: event.type,
