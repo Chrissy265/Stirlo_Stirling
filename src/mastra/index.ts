@@ -6,6 +6,7 @@ import pino from "pino";
 import { MCPServer } from "@mastra/mcp";
 import { NonRetriableError } from "inngest";
 import { z } from "zod";
+import { cors } from "hono/cors";
 
 import { sharedPostgresStorage } from "./storage";
 import { inngest, inngestServe } from "./inngest";
@@ -15,6 +16,7 @@ import { mondaySearchTool, mondayGetUpcomingDeadlinesTool } from "./tools/monday
 import { ragSearchTool, ragStoreTool } from "./tools/ragTool";
 import { slackIntelligentAssistantWorkflow } from "./workflows/slackIntelligentAssistantWorkflow";
 import { initializeSocketMode, getSlackTestRoute } from "../triggers/slackTriggers";
+import { getChatRoute, getHistoryRoute, getConversationRoute, getHealthRoute } from "../api/lovableRoutes";
 import { format } from "node:util";
 
 class ProductionPinoLogger extends MastraLogger {
@@ -96,6 +98,15 @@ export const mastra = new Mastra({
     host: "0.0.0.0",
     port: 5000,
     middleware: [
+      // CORS middleware for Lovable frontend integration
+      cors({
+        origin: '*', // Allow all origins for development
+        allowHeaders: ['Content-Type', 'Authorization'],
+        allowMethods: ['POST', 'GET', 'OPTIONS'],
+        exposeHeaders: ['Content-Length'],
+        maxAge: 600,
+        credentials: false, // Must be false when using wildcard origin
+      }),
       async (c, next) => {
         const mastra = c.get("mastra");
         const logger = mastra?.getLogger();
@@ -140,6 +151,11 @@ export const mastra = new Mastra({
       },
       // Diagnostic test endpoint for Slack
       getSlackTestRoute(),
+      // Lovable API endpoints for web frontend integration
+      getChatRoute(),
+      getHistoryRoute(),
+      getConversationRoute(),
+      getHealthRoute(),
     ],
   },
   logger:
