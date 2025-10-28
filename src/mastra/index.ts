@@ -100,12 +100,21 @@ export const mastra = new Mastra({
     middleware: [
       // CORS middleware for Lovable frontend integration
       cors({
-        origin: '*', // Allow all origins for development
+        origin: (origin) => {
+          // Allow specific Lovable domain, any Lovable subdomain, and localhost
+          const allowedOrigins = [
+            'https://stirlo-ai-assist.lovable.app',
+            'http://localhost:5173',
+          ];
+          if (allowedOrigins.includes(origin)) return origin;
+          if (origin.match(/^https:\/\/.*\.lovable\.app$/)) return origin;
+          return 'https://stirlo-ai-assist.lovable.app'; // Default allowed origin
+        },
         allowHeaders: ['Content-Type', 'Authorization'],
         allowMethods: ['POST', 'GET', 'OPTIONS'],
         exposeHeaders: ['Content-Length'],
         maxAge: 600,
-        credentials: false, // Must be false when using wildcard origin
+        credentials: true, // Allow credentials with specific origins
       }),
       async (c, next) => {
         const mastra = c.get("mastra");
