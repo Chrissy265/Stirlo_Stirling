@@ -1,0 +1,79 @@
+Replit Prompt: Fix Backend Health Checks & Maintain Connection
+Objective: Ensure the backend at https://stirlo-stirling.onrender.com responds reliably to health checks and stays connected for the Stirlo frontend application.
+Current Problem:
+The health endpoint at https://stirlo-stirling.onrender.com/api/health is not responding, causing connection failures in the frontend. This is likely due to missing health endpoint, CORS configuration issues, or the Render app sleeping due to inactivity.
+
+Task 1: Implement Health Check Endpoint
+Requirements:
+
+Create or update the /api/health endpoint in your Express/Node.js backend
+The endpoint should return a JSON response with status and timestamp
+Ensure the endpoint responds quickly (under 1 second)
+Add basic logging to track health check requests
+
+Implementation:
+javascript// In your main server file (e.g., index.js, server.js, app.js)
+
+app.get('/api/health', (req, res) => {
+  console.log('Health check requested at:', new Date().toISOString());
+  res.status(200).json({ 
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    service: 'Stirlo Backend',
+    uptime: process.uptime()
+  });
+});
+Test: After implementation, visit https://stirlo-stirling.onrender.com/api/health in your browser and verify you get a JSON response.
+
+Task 2: Configure CORS for Lovable Frontend
+Requirements:
+
+Install the cors package if not already installed: npm install cors
+Configure CORS to allow requests from Lovable domains
+Allow the specific Lovable project URLs
+Enable credentials if needed for authentication
+
+Implementation:
+javascriptconst cors = require('cors');
+
+// CORS configuration - add this BEFORE your routes
+const corsOptions = {
+  origin: [
+    'https://98d24c28-bb3b-46ef-b7e9-0260111e27c3.lovableproject.com',
+    'https://id-preview--98d24c28-bb3b-46ef-b7e9-0260111e27c3.lovable.app',
+    'http://localhost:5173', // For local development
+    'http://localhost:3000'  // Alternative local port
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
+Test: After implementation, the frontend should be able to make requests without CORS errors in the browser console.
+
+Task 3: Prevent Render App from Sleeping
+Problem: Free Render apps spin down after 15 minutes of inactivity, causing the first request to timeout while the app wakes up.
+Solution Options:
+Option A: Self-Ping Keep-Alive (Recommended for Free Tier)
+javascript// Add this to your server file to ping itself every 14 minutes
+const RENDER_EXTERNAL_URL = 'https://stirlo-stirling.onrender.com';
+
+// Only run keep-alive if deployed on Render
+if (process.env.RENDER) {
+  const keepAlive = () => {
+    console.log('Keep-alive ping at:', new Date().toISOString());
+    fetch(`${RENDER_EXTERNAL_URL}/api/health`)
+      .then(res => console.log('Keep-alive successful:', res.status))
+      .catch(err => console.error('Keep-alive failed:', err.message));
+  };
+
+  // Ping every 14 minutes (Render free tier spins down after 15 minutes)
+  setInterval(keepAlive, 14 * 60 * 1000);
+  
+  console.log('Keep-alive mechanism activated');
+}
