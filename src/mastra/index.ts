@@ -18,6 +18,7 @@ import { slackIntelligentAssistantWorkflow } from "./workflows/slackIntelligentA
 import { initializeSocketMode, getSlackTestRoute } from "../triggers/slackTriggers";
 import { getChatRoute, getHistoryRoute, getConversationRoute, getHealthRoute } from "../api/lovableRoutes";
 import { format } from "node:util";
+import { startKeepAlive } from "../services/keepAlive";
 
 class ProductionPinoLogger extends MastraLogger {
   protected logger: pino.Logger;
@@ -209,6 +210,22 @@ setInterval(() => {
     }
   }
 }, 30000);
+
+// Initialize Keep-Alive service for Render deployment
+// Only activates when RENDER env var is present (production on Render)
+// Pings /api/health every 5 minutes to prevent app from sleeping
+const RENDER_EXTERNAL_URL = process.env.RENDER_EXTERNAL_URL || "https://stirlo-stirling.onrender.com";
+if (process.env.RENDER) {
+  const logger = mastra.getLogger();
+  logger?.info("🔄 [Keep-Alive] Initializing service for Render deployment", {
+    url: RENDER_EXTERNAL_URL,
+    intervalMinutes: 5,
+  });
+  startKeepAlive(RENDER_EXTERNAL_URL, logger);
+} else {
+  const logger = mastra.getLogger();
+  logger?.debug("⏸️  [Keep-Alive] Not on Render, service disabled");
+}
 
 // Initialize Slack Socket Mode connection
 // This connects to Slack via WebSocket instead of webhooks
