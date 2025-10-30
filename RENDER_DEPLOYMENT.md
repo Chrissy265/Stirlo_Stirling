@@ -75,8 +75,9 @@ git push origin main
    **Build & Deploy:**
    - **Build Command**: 
      ```bash
-     npm install && npx mastra build
+     npm ci --include=dev && npm run build
      ```
+     > **Note**: We use `--include=dev` to install devDependencies (including the `mastra` CLI) during build
    - **Start Command**: 
      ```bash
      cd .mastra/output && NODE_ENV=production node --import=./instrumentation.mjs index.mjs
@@ -218,6 +219,15 @@ Your Lovable domain (`https://stirlo-ai-assist.lovable.app`) is already allowlis
 ---
 
 ## Troubleshooting
+
+### Build Fails: "mastra: not found"
+**Symptom**: Build fails with `sh: 1: mastra: not found`
+**Cause**: Render isn't installing devDependencies (where `mastra` CLI lives)
+**Solution**: Update your Build Command in Render to:
+```bash
+npm ci --include=dev && npm run build
+```
+This ensures devDependencies are installed during the build phase.
 
 ### Keep-Alive Not Activating
 **Symptom**: No keep-alive logs in Render
