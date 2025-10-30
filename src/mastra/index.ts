@@ -196,21 +196,6 @@ if (Object.keys(mastra.getAgents()).length > 1) {
   );
 }
 
-// Deduplication cache to prevent duplicate processing when Slack sends both
-// 'message' and 'app_mention' events for the same @mention
-const processedMessages = new Map<string, number>();
-const MESSAGE_CACHE_TTL = 60000; // 60 seconds
-
-// Clean up old entries every 30 seconds
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, timestamp] of processedMessages.entries()) {
-    if (now - timestamp > MESSAGE_CACHE_TTL) {
-      processedMessages.delete(key);
-    }
-  }
-}, 30000);
-
 // Initialize Keep-Alive service for Render deployment
 // Only activates when RENDER env var is present (production on Render)
 // Pings /api/health every 5 minutes to prevent app from sleeping
@@ -261,19 +246,6 @@ initializeSocketMode({
         logger?.info("📝 [Slack Trigger] Ignoring message (not DM or mention)");
         return null;
       }
-
-      // Deduplication check: Slack sends both 'message' and 'app_mention' events for @mentions
-      const messageId = `${payload.event.channel}:${payload.event.ts}`;
-      if (processedMessages.has(messageId)) {
-        logger?.info("📝 [Slack Trigger] Ignoring duplicate event", {
-          messageId,
-          eventType: triggerInfo.payload?.event?.type,
-        });
-        return null;
-      }
-      
-      // Mark this message as processed
-      processedMessages.set(messageId, Date.now());
 
       // Run the workflow
       logger?.info("🚀 [Slack Trigger] Starting workflow execution", {
