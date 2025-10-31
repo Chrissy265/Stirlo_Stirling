@@ -1,3 +1,4 @@
+import { openai } from "@ai-sdk/openai";
 import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 import { sharedPostgresStorage } from "../storage";
@@ -96,7 +97,7 @@ When presenting search results:
 Remember: Your goal is to make the team more efficient by providing instant, accurate, and contextual information from across their workplace tools.
   `,
   
-  model: "openai/gpt-4o",
+  model: openai("gpt-4o"),
   
   tools: {
     sharepointSearchTool,
