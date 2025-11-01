@@ -340,10 +340,15 @@ export async function initializeSocketMode<
           text: event.text?.substring(0, 50)
         });
 
-        // Only process message and app_mention events
-        if (event.type !== "message" && event.type !== "app_mention") {
-          logger?.info("📝 [Slack Socket Mode] Ignoring non-message event", { 
-            eventType: event.type 
+        // Process app_mention for channels and message for DMs (avoids duplicate responses)
+        const isDM = event.channel_type === "im";
+        const shouldProcess = event.type === "app_mention" || (event.type === "message" && isDM);
+        
+        if (!shouldProcess) {
+          logger?.info("📝 [Slack Socket Mode] Ignoring event", { 
+            eventType: event.type,
+            channelType: event.channel_type,
+            reason: isDM ? "Not a message in DM" : "Not an app_mention in channel"
           });
           return;
         }
