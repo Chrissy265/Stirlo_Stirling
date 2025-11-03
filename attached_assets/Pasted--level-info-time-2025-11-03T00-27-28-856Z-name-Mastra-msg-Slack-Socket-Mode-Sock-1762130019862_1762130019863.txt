@@ -1,0 +1,36 @@
+{"level":"info","time":"2025-11-03T00:27:28.856Z","name":"Mastra","msg":"🚀 [Slack Socket Mode] Socket Mode client started successfully"}
+     ==> Your service is live 🎉
+     ==> 
+     ==> ///////////////////////////////////////////////////////////
+     ==> 
+     ==> Available at your primary URL https://stirlo-stirling.onrender.com
+     ==> 
+     ==> ///////////////////////////////////////////////////////////
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="11792adf-f819-4d33" responseTimeMS=5 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="9619c667-7bae-4d1b" responseTimeMS=2 responseBytes=579 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="8453f05a-d997-4c76" responseTimeMS=1 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="fccff85a-9c42-48cd" responseTimeMS=3 responseBytes=579 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="50dfa082-9068-458b" responseTimeMS=3 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="4c2a93e8-1401-4cf5" responseTimeMS=3 responseBytes=579 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="dc24289b-c280-4c70" responseTimeMS=14 responseBytes=579 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="b691f158-0d5c-4275" responseTimeMS=10 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="802031cd-043b-4a5f" responseTimeMS=4 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="dd6e8be7-afd8-4613" responseTimeMS=3 responseBytes=579 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="f1056f01-9f63-40bb" responseTimeMS=22 responseBytes=579 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="5dde110e-1adf-4796" responseTimeMS=4 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="2d1bbc88-97c3-4c6f" responseTimeMS=2 responseBytes=579 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="1f342c0f-586c-41b5" responseTimeMS=4 responseBytes=579 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="876a7a47-dc8c-418f" responseTimeMS=3 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="51a48cf0-ba5b-4e41" responseTimeMS=1 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="02271c18-f638-4ad6" responseTimeMS=5 responseBytes=579 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="9cbdd09b-d07d-4eda" responseTimeMS=3 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="e36e92e8-59ca-4a29" responseTimeMS=4 responseBytes=579 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="4f7e42cc-0a9f-490a" responseTimeMS=3 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="216.24.60.141" requestID="7ce086ed-f1a3-4c51" responseTimeMS=3 responseBytes=547 userAgent="KeepAlive-Service/1.0"
+{"level":"info","time":"2025-11-03T00:32:28.629Z","name":"Mastra","statusCode":200,"responseTime":71,"pingNumber":2,"successRate":"100.0%","msg":"✅ [Keep-Alive] Ping successful"}
+     ==> Detected service running on port 5000
+     ==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="8b3b6c01-2e7e-4afa" responseTimeMS=3 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="be6ed465-ae89-433e" responseTimeMS=4 responseBytes=579 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="b5aca3be-b368-4973" responseTimeMS=3 responseBytes=579 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="0e3d556f-e521-4caa" responseTimeMS=2 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
