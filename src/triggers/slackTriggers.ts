@@ -251,7 +251,17 @@ export async function initializeSocketMode<
 }) {
   const logger = mastra.getLogger();
   
-  logger?.info("🔌 [Slack Socket Mode] Initializing Socket Mode connection");
+  // Log deployment environment information
+  const isRender = !!process.env.RENDER;
+  const isReplit = !!process.env.REPL_ID;
+  const deploymentEnv = isRender ? 'Render' : isReplit ? 'Replit' : 'Unknown';
+  
+  logger?.info("🔌 [Slack Socket Mode] Initializing Socket Mode connection", {
+    environment: deploymentEnv,
+    renderServiceUrl: process.env.RENDER_EXTERNAL_URL,
+    hasAppToken: !!process.env.SLACK_APP_TOKEN,
+    hasBotToken: !!process.env.SLACK_BOT_TOKEN,
+  });
 
   // Try to get app token from manual environment variable first
   let appToken = process.env.SLACK_APP_TOKEN;
@@ -317,15 +327,23 @@ export async function initializeSocketMode<
 
   // Listen to all Socket Mode events
   socketClient.on("slack_event", async ({ body, ack }) => {
+    const eventStartTime = Date.now();
+    
     logger?.info("📝 [Slack Socket Mode] Received event", { 
       type: body.type,
       eventType: body.event?.type,
       channel: body.event?.channel,
+      eventId: body.event_id,
+      timestamp: new Date().toISOString(),
     });
 
     try {
       // Acknowledge the event immediately
       await ack();
+      logger?.info("✅ [Slack Socket Mode] Event acknowledged", {
+        eventId: body.event_id,
+        ackTimeMs: Date.now() - eventStartTime,
+      });
 
       // Handle the event - Socket Mode sends events directly on body.event
       // Slack sends either "events_api" or "event_callback" depending on the event source
@@ -422,6 +440,13 @@ export async function initializeSocketMode<
         }
 
         // Call the handler with the correct payload structure
+        logger?.info("🚀 [Slack Socket Mode] Invoking workflow handler", {
+          eventId: body.event_id,
+          channel: event.channel,
+          user: event.user,
+        });
+        
+        const handlerStartTime = Date.now();
         const result = await handler(mastra, {
           type: "slack/message.channels",
           params: {
@@ -430,9 +455,15 @@ export async function initializeSocketMode<
           },
           payload: payload,
         });
+        
+        const handlerDuration = Date.now() - handlerStartTime;
+        const totalEventDuration = Date.now() - eventStartTime;
 
-        logger?.info("📝 [Slack Socket Mode] Handler completed", { 
-          status: result?.status 
+        logger?.info("✅ [Slack Socket Mode] Handler completed successfully", { 
+          status: result?.status,
+          handlerDurationMs: handlerDuration,
+          totalEventDurationMs: totalEventDuration,
+          eventId: body.event_id,
         });
 
         // React based on result
@@ -451,23 +482,52 @@ export async function initializeSocketMode<
   socketClient.on("error", (error) => {
     logger?.error("❌ [Slack Socket Mode] Socket error", {
       error: format(error),
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorType: error?.constructor?.name,
+      timestamp: new Date().toISOString(),
     });
   });
 
   // Listen to disconnection
   socketClient.on("disconnect", () => {
-    logger?.warn("⚠️ [Slack Socket Mode] Disconnected from Slack");
+    logger?.warn("⚠️ [Slack Socket Mode] Disconnected from Slack", {
+      timestamp: new Date().toISOString(),
+      environment: deploymentEnv,
+    });
   });
 
   // Listen to reconnection
   socketClient.on("ready", () => {
-    logger?.info("✅ [Slack Socket Mode] Connected and ready");
+    logger?.info("✅ [Slack Socket Mode] Connected and ready", {
+      timestamp: new Date().toISOString(),
+      environment: deploymentEnv,
+      botId: auth.bot_id,
+    });
   });
 
   // Start the client
-  await socketClient.start();
+  logger?.info("⏳ [Slack Socket Mode] Starting Socket Mode client...");
+  const startTime = Date.now();
   
-  logger?.info("🚀 [Slack Socket Mode] Socket Mode client started successfully");
+  try {
+    await socketClient.start();
+    const startDuration = Date.now() - startTime;
+    
+    logger?.info("🚀 [Slack Socket Mode] Socket Mode client started successfully", {
+      startDurationMs: startDuration,
+      environment: deploymentEnv,
+      botId: auth.bot_id,
+      userId: auth.user_id,
+    });
+  } catch (error) {
+    logger?.error("❌ [Slack Socket Mode] Failed to start Socket Mode client", {
+      error: format(error),
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+      environment: deploymentEnv,
+    });
+    throw error;
+  }
 }
 
 // Diagnostic test endpoint
