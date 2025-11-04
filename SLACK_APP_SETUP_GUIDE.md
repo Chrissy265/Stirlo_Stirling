@@ -161,7 +161,13 @@ You now have 3 important tokens:
    - Key: `SLACK_APP_TOKEN` → Value: [paste your xapp- token]
    - Key: `SLACK_SIGNING_SECRET` → Value: [paste your signing secret]
 5. Click **"Save Changes"**
-6. Render will automatically redeploy your app with the new tokens
+
+**Important**: Render will **automatically redeploy** your app when you save environment variables. You don't need to do anything else!
+
+6. Wait for the redeploy to complete:
+   - You'll see a yellow "Deploying" status at the top
+   - After 1-2 minutes, it will change to green "Live"
+   - Once it says "Live", your bot is ready to use with the new tokens
 
 **For Replit (if testing locally):**
 1. Go to your Replit workspace
