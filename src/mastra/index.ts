@@ -61,6 +61,21 @@ class ProductionPinoLogger extends MastraLogger {
   }
 }
 
+// Log startup information
+const startupLogger = console;
+const isRender = !!process.env.RENDER;
+const isReplit = !!process.env.REPL_ID;
+const deploymentEnv = isRender ? 'Render' : isReplit ? 'Replit' : 'Local';
+
+startupLogger.log("🚀 [Mastra] Initializing Mastra instance...", {
+  environment: deploymentEnv,
+  renderUrl: process.env.RENDER_EXTERNAL_URL,
+  hasSlackAppToken: !!process.env.SLACK_APP_TOKEN,
+  hasSlackBotToken: !!process.env.SLACK_BOT_TOKEN,
+  hasDatabase: !!process.env.DATABASE_URL,
+  nodeEnv: process.env.NODE_ENV,
+});
+
 export const mastra = new Mastra({
   storage: sharedPostgresStorage,
   // Register your workflows here
@@ -182,7 +197,17 @@ export const mastra = new Mastra({
 
 /*  Sanity check 1: Throw an error if there are more than 1 workflows.  */
 // !!!!!! Do not remove this check. !!!!!!
-if (Object.keys(mastra.getWorkflows()).length > 1) {
+const workflows = Object.keys(mastra.getWorkflows());
+const logger = mastra.getLogger();
+
+logger?.info("✅ [Mastra] Validating configuration", {
+  workflowCount: workflows.length,
+  workflows: workflows,
+  agentCount: Object.keys(mastra.getAgents()).length,
+  agents: Object.keys(mastra.getAgents()),
+});
+
+if (workflows.length > 1) {
   throw new Error(
     "More than 1 workflows found. Currently, more than 1 workflows are not supported in the UI, since doing so will cause app state to be inconsistent.",
   );
@@ -195,6 +220,8 @@ if (Object.keys(mastra.getAgents()).length > 1) {
     "More than 1 agents found. Currently, more than 1 agents are not supported in the UI, since doing so will cause app state to be inconsistent.",
   );
 }
+
+logger?.info("✅ [Mastra] Configuration validated successfully");
 
 // Initialize Keep-Alive service for Render deployment
 // Only activates when RENDER env var is present (production on Render)
