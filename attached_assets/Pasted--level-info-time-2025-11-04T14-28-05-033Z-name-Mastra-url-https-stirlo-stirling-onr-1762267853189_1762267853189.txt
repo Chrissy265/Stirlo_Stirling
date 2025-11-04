@@ -1,0 +1,27 @@
+{"level":"info","time":"2025-11-04T14:28:05.033Z","name":"Mastra","url":"https://stirlo-stirling.onrender.com","intervalMinutes":5,"msg":"🔄 [Keep-Alive] Initializing service for Render deployment"}
+{"level":"info","time":"2025-11-04T14:28:05.033Z","name":"Mastra","url":"https://stirlo-stirling.onrender.com/api/health","intervalMinutes":5,"intervalMs":300000,"msg":"🚀 [Keep-Alive] Service starting"}
+{"level":"info","time":"2025-11-04T14:28:05.112Z","name":"Mastra","msg":"✅ [Keep-Alive] Service started successfully"}
+{"level":"info","time":"2025-11-04T14:28:05.113Z","name":"Mastra","msg":"🔌 [Slack Socket Mode] Initializing Socket Mode connection"}
+{"level":"info","time":"2025-11-04T14:28:05.113Z","name":"Mastra","msg":"🔌 [Slack Socket Mode] Using SLACK_APP_TOKEN from environment"}
+{"level":"info","time":"2025-11-04T14:28:05.173Z","name":"Mastra","msg":" Mastra API running on port http://0.0.0.0:5000/api"}
+{"level":"info","time":"2025-11-04T14:28:05.280Z","name":"Mastra","botId":"B09QKDVC9KP","userId":"U09RH6WEP2L","msg":"🔌 [Slack Socket Mode] Bot authenticated"}
+[ERROR]  socket-mode:SocketModeClient:0 Failed to retrieve a new WSS URL (error: Error: An API error occurred: invalid_auth)
+{"level":"error","time":"2025-11-04T14:28:05.308Z","name":"Mastra","error":"Error: An API error occurred: invalid_auth\n    at platformErrorFromResult (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/errors.js:67:33)\n    at WebClient.<anonymous> (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/WebClient.js:242:60)\n    at Generator.next (<anonymous>)\n    at fulfilled (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/WebClient.js:38:58)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {\n  code: 'slack_webapi_platform_error',\n  data: { ok: false, error: 'invalid_auth', response_metadata: {} }\n}","errorMessage":"An API error occurred: invalid_auth","errorStack":"Error: An API error occurred: invalid_auth\n    at platformErrorFromResult (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/errors.js:67:33)\n    at WebClient.<anonymous> (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/WebClient.js:242:60)\n    at Generator.next (<anonymous>)\n    at fulfilled (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/WebClient.js:38:58)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)","msg":"❌ [Slack Socket Mode] Failed to initialize"}
+{"level":"info","time":"2025-11-04T14:28:05.336Z","name":"Mastra","statusCode":200,"responseTime":303,"pingNumber":1,"successRate":"100.0%","msg":"✅ [Keep-Alive] Ping successful"}
+==> Your service is live 🎉
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://stirlo-stirling.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
+{"level":"info","time":"2025-11-04T14:33:05.177Z","name":"Mastra","statusCode":200,"responseTime":62,"pingNumber":2,"successRate":"100.0%","msg":"✅ [Keep-Alive] Ping successful"}
+==> Detected service running on port 5000
+==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+{"level":"info","time":"2025-11-04T14:38:05.191Z","name":"Mastra","statusCode":200,"responseTime":72,"pingNumber":3,"successRate":"100.0%","msg":"✅ [Keep-Alive] Ping successful"}
+{"level":"info","time":"2025-11-04T14:33:05.177Z","name":"Mastra","statusCode":200,"responseTime":62,"pingNumber":2,"successRate":"100.0%","msg":"✅ [Keep-Alive] Ping successful"}
+==> Detected service running on port 5000
+==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+{"level":"info","time":"2025-11-04T14:38:05.191Z","name":"Mastra","statusCode":200,"responseTime":72,"pingNumber":3,"successRate":"100.0%","msg":"✅ [Keep-Alive] Ping successful"}
+{"level":"info","time":"2025-11-04T14:43:05.194Z","name":"Mastra","statusCode":200,"responseTime":71,"pingNumber":4,"successRate":"100.0%","msg":"✅ [Keep-Alive] Ping successful"}
+{"level":"info","time":"2025-11-04T14:48:05.194Z","name":"Mastra","statusCode":200,"responseTime":66,"pingNumber":5,"successRate":"100.0%","msg":"✅ [Keep-Alive] Ping successful"}
