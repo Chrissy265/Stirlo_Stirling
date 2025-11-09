@@ -1,0 +1,33 @@
+esponseTime":65,"pingNumber":9,"successRate":"100.0%","msg":"✅ [Keep-Alive] Ping successful"}
+     ==> Deploying...
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="67c03301-efcc-4e3a" responseTimeMS=3 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="8bfaf9d5-9039-4412" responseTimeMS=2 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+🚀 [Mastra] Initializing Mastra instance... {
+  environment: 'Render',
+  renderUrl: 'https://stirlo-stirling.onrender.com',
+  hasSlackAppToken: true,
+  hasSlackBotToken: true,
+  hasDatabase: true,
+  nodeEnv: 'production'
+}
+{"level":"warn","time":"2025-11-09T04:51:01.872Z","name":"Mastra","msg":"If you are using a custom instrumentation file or want to disable this warning, set the globalThis.___MASTRA_TELEMETRY___ variable to true in your instrumentation file."}
+🔌 [Slack] Using SLACK_BOT_TOKEN from environment
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="74.220.49.248" requestID="ae976c08-d086-4bc6" responseTimeMS=5 responseBytes=547 userAgent="KeepAlive-Service/1.0"
+{"level":"warn","time":"2025-11-09T04:51:01.873Z","name":"Mastra","msg":"Mastra telemetry is deprecated and will be removed on the Nov 4th release. Instead use AI Tracing. More info can be found here: https://github.com/mastra-ai/mastra/issues/8577 and here: https://mastra.ai/en/docs/observability/ai-tracing/overview"}
+{"level":"info","time":"2025-11-09T04:51:01.877Z","name":"Mastra","workflowCount":1,"workflows":["slackIntelligentAssistantWorkflow"],"agentCount":1,"agents":["intelligentAssistant"],"msg":"✅ [Mastra] Validating configuration"}
+{"level":"info","time":"2025-11-09T04:51:01.877Z","name":"Mastra","msg":"✅ [Mastra] Configuration validated successfully"}
+{"level":"info","time":"2025-11-09T04:51:01.877Z","name":"Mastra","url":"https://stirlo-stirling.onrender.com","intervalMinutes":5,"msg":"🔄 [Keep-Alive] Initializing service for Render deployment"}
+{"level":"info","time":"2025-11-09T04:51:01.878Z","name":"Mastra","url":"https://stirlo-stirling.onrender.com/api/health","intervalMinutes":5,"intervalMs":300000,"msg":"🚀 [Keep-Alive] Service starting"}
+{"level":"info","time":"2025-11-09T04:51:01.958Z","name":"Mastra","msg":"✅ [Keep-Alive] Service started successfully"}
+{"level":"info","time":"2025-11-09T04:51:01.958Z","name":"Mastra","environment":"Render","renderServiceUrl":"https://stirlo-stirling.onrender.com","hasAppToken":true,"hasBotToken":true,"msg":"🔌 [Slack Socket Mode] Initializing Socket Mode connection"}
+{"level":"info","time":"2025-11-09T04:51:01.958Z","name":"Mastra","msg":"🔌 [Slack Socket Mode] Using SLACK_APP_TOKEN from environment"}
+{"level":"info","time":"2025-11-09T04:51:02.083Z","name":"Mastra","msg":" Mastra API running on port http://0.0.0.0:5000/api"}
+{"level":"error","time":"2025-11-09T04:51:02.170Z","name":"Mastra","error":"Error: An API error occurred: invalid_auth\n    at platformErrorFromResult (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/errors.js:67:33)\n    at WebClient.<anonymous> (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/WebClient.js:242:60)\n    at Generator.next (<anonymous>)\n    at fulfilled (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/WebClient.js:38:58)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {\n  code: 'slack_webapi_platform_error',\n  data: { ok: false, error: 'invalid_auth', response_metadata: {} }\n}","errorMessage":"An API error occurred: invalid_auth","errorStack":"Error: An API error occurred: invalid_auth\n    at platformErrorFromResult (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/errors.js:67:33)\n    at WebClient.<anonymous> (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/WebClient.js:242:60)\n    at Generator.next (<anonymous>)\n    at fulfilled (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/WebClient.js:38:58)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)","msg":"❌ [Slack Socket Mode] Failed to initialize"}
+{"level":"info","time":"2025-11-09T04:51:02.193Z","name":"Mastra","statusCode":200,"responseTime":315,"pingNumber":1,"successRate":"100.0%","msg":"✅ [Keep-Alive] Ping successful"}
+     ==> Your service is live 🎉
+     ==> 
+     ==> ///////////////////////////////////////////////////////////
+     ==> 
+     ==> Available at your primary URL https://stirlo-stirling.onrender.com
+     ==> 
+     ==> ///////////////////////////////////////////////////////////
