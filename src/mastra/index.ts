@@ -247,32 +247,29 @@ initializeSocketMode({
     const logger = mastra.getLogger();
     
     try {
-      logger?.info("📝 [Slack Trigger] Received message", { 
+      const { payload } = triggerInfo;
+      
+      logger?.info("📝 [Slack Trigger] Received message from Socket Mode", { 
         channel: triggerInfo.params.channel,
         channelName: triggerInfo.params.channelDisplayName,
-        eventType: triggerInfo.payload?.event?.type,
-        hasText: !!triggerInfo.payload?.event?.text,
+        eventType: payload?.event?.type,
+        channelType: payload?.event?.channel_type,
+        hasText: !!payload?.event?.text,
+        messagePreview: payload?.event?.text?.substring(0, 100),
+        hasAuthorizations: !!payload?.authorizations,
+        authorizationsLength: payload?.authorizations?.length || 0,
       });
 
-      // By default, respond only to direct messages or mentions
-      const { payload } = triggerInfo;
-      const isDirectMessage = payload?.event?.channel_type === "im";
-      const botUserId = payload?.authorizations?.[0]?.user_id;
-      const isMention = botUserId && payload?.event?.text?.includes(`<@${botUserId}>`);
-      const shouldRespond = isDirectMessage || isMention;
-
-      logger?.info("📝 [Slack Trigger] Message evaluation", {
-        isDirectMessage,
-        botUserId,
-        isMention,
-        shouldRespond,
-        messageText: payload?.event?.text?.substring(0, 100),
+      // Socket Mode already filters to only DMs and app_mentions (in slackTriggers.ts)
+      // No need to re-check here - trust the Socket Mode filter
+      // The previous redundant check was causing all messages to be discarded because
+      // payload.authorizations[0].user_id is often empty in Socket Mode
+      
+      logger?.info("📝 [Slack Trigger] Processing message (pre-filtered by Socket Mode)", {
+        eventType: payload?.event?.type,
+        channelType: payload?.event?.channel_type,
+        messageLength: payload?.event?.text?.length,
       });
-
-      if (!shouldRespond) {
-        logger?.info("📝 [Slack Trigger] Ignoring message (not DM or mention)");
-        return null;
-      }
 
       // Run the workflow
       logger?.info("🚀 [Slack Trigger] Starting workflow execution", {
