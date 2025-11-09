@@ -67,6 +67,8 @@ export async function getClient() {
   if (manualToken) {
     // Use manually configured token from Replit Secrets
     console.log("🔌 [Slack] Using SLACK_BOT_TOKEN from environment");
+    // DEBUG: Show last 8 chars of token for verification
+    console.log("🔍 [DEBUG] Bot token ends with:", manualToken.slice(-8));
     const slack = new WebClient(manualToken);
     const response = await slack.auth.test();
     return { slack, auth: response, user: undefined };
@@ -265,6 +267,15 @@ export async function initializeSocketMode<
 
   // Try to get app token from manual environment variable first
   let appToken = process.env.SLACK_APP_TOKEN;
+  
+  // DEBUG: Show token info for verification
+  if (appToken) {
+    logger?.info("🔍 [DEBUG] App token loaded", {
+      length: appToken.length,
+      endsWithLast8: appToken.slice(-8),
+      startsWithXapp: appToken.startsWith('xapp-'),
+    });
+  }
   
   if (!appToken) {
     // Fall back to connector approach for app token
