@@ -1,0 +1,67 @@
+==> Downloading cache...
+==> It looks like we don't have access to your repo, but we'll try to clone it anyway.
+==> Cloning from https://github.com/Chrissy265/Stirlo_Stirling
+==> Checking out commit 366819c3872eac5a11f840bd065f27343e652465 in branch main
+==> Downloaded 310MB in 4s. Extraction took 9s.
+==> Requesting Node.js version >=20.9.0
+==> Using Node.js version 25.1.0 via /opt/render/project/src/package.json
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Running build command 'npm ci --include=dev && npm run build'...
+added 842 packages, and audited 843 packages in 20s
+116 packages are looking for funding
+  run `npm fund` for details
+19 vulnerabilities (12 low, 6 moderate, 1 high)
+To address issues that do not require attention, run:
+  npm audit fix
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+Run `npm audit` for details.
+> agent-stack-mastra@1.0.0 build
+> mastra build
+INFO [2025-11-09 04:07:02.681 +0000] (Mastra CLI): Analyzing dependencies...
+INFO [2025-11-09 04:07:04.888 +0000] (Mastra CLI): Optimizing dependencies...
+INFO [2025-11-09 04:07:34.461 +0000] (Mastra CLI): Bundling Mastra application
+INFO [2025-11-09 04:07:40.130 +0000] (Mastra CLI): Bundling Mastra done
+INFO [2025-11-09 04:07:40.131 +0000] (Mastra CLI): Copying public files
+INFO [2025-11-09 04:07:40.131 +0000] (Mastra CLI): Done copying public files
+INFO [2025-11-09 04:07:40.131 +0000] (Mastra CLI): Copying .npmrc file
+INFO [2025-11-09 04:07:40.132 +0000] (Mastra CLI): Done copying .npmrc file
+INFO [2025-11-09 04:07:40.132 +0000] (Mastra CLI): Installing dependencies
+added 748 packages in 47s
+INFO [2025-11-09 04:08:27.016 +0000] (Mastra CLI): added 748 packages in 47s
+INFO [2025-11-09 04:08:27.159 +0000] (Mastra CLI): Done installing dependencies
+INFO [2025-11-09 04:08:27.159 +0000] (Mastra CLI): Build successful, you can now deploy the .mastra/output directory to your target platform.
+INFO [2025-11-09 04:08:27.160 +0000] (Mastra CLI): To start the server, run: node --import=./.mastra/output/instrumentation.mjs .mastra/output/index.mjs
+==> Uploading build...
+==> Uploaded in 10.9s. Compression took 14.9s
+==> Build successful 🎉
+==> Deploying...
+==> Running 'cd .mastra/output && NODE_ENV=production node index.mjs'
+🚀 [Mastra] Initializing Mastra instance... {
+  environment: 'Render',
+  renderUrl: 'https://stirlo-stirling.onrender.com',
+  hasSlackAppToken: true,
+  hasSlackBotToken: true,
+  hasDatabase: true,
+  nodeEnv: 'production'
+}
+{"level":"warn","time":"2025-11-09T04:09:59.641Z","name":"Mastra","msg":"If you are using a custom instrumentation file or want to disable this warning, set the globalThis.___MASTRA_TELEMETRY___ variable to true in your instrumentation file."}
+🔌 [Slack] Using SLACK_BOT_TOKEN from environment
+{"level":"warn","time":"2025-11-09T04:09:59.642Z","name":"Mastra","msg":"Mastra telemetry is deprecated and will be removed on the Nov 4th release. Instead use AI Tracing. More info can be found here: https://github.com/mastra-ai/mastra/issues/8577 and here: https://mastra.ai/en/docs/observability/ai-tracing/overview"}
+{"level":"info","time":"2025-11-09T04:09:59.651Z","name":"Mastra","workflowCount":1,"workflows":["slackIntelligentAssistantWorkflow"],"agentCount":1,"agents":["intelligentAssistant"],"msg":"✅ [Mastra] Validating configuration"}
+{"level":"info","time":"2025-11-09T04:09:59.651Z","name":"Mastra","msg":"✅ [Mastra] Configuration validated successfully"}
+{"level":"info","time":"2025-11-09T04:09:59.651Z","name":"Mastra","url":"https://stirlo-stirling.onrender.com","intervalMinutes":5,"msg":"🔄 [Keep-Alive] Initializing service for Render deployment"}
+{"level":"info","time":"2025-11-09T04:09:59.651Z","name":"Mastra","url":"https://stirlo-stirling.onrender.com/api/health","intervalMinutes":5,"intervalMs":300000,"msg":"🚀 [Keep-Alive] Service starting"}
+{"level":"info","time":"2025-11-09T04:09:59.678Z","name":"Mastra","msg":"✅ [Keep-Alive] Service started successfully"}
+{"level":"info","time":"2025-11-09T04:09:59.678Z","name":"Mastra","environment":"Render","renderServiceUrl":"https://stirlo-stirling.onrender.com","hasAppToken":true,"hasBotToken":true,"msg":"🔌 [Slack Socket Mode] Initializing Socket Mode connection"}
+{"level":"info","time":"2025-11-09T04:09:59.678Z","name":"Mastra","msg":"🔌 [Slack Socket Mode] Using SLACK_APP_TOKEN from environment"}
+{"level":"info","time":"2025-11-09T04:09:59.858Z","name":"Mastra","msg":" Mastra API running on port http://0.0.0.0:5000/api"}
+{"level":"error","time":"2025-11-09T04:09:59.937Z","name":"Mastra","error":"Error: An API error occurred: invalid_auth\n    at platformErrorFromResult (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/errors.js:67:33)\n    at WebClient.<anonymous> (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/WebClient.js:242:60)\n    at Generator.next (<anonymous>)\n    at fulfilled (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/WebClient.js:38:58)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {\n  code: 'slack_webapi_platform_error',\n  data: { ok: false, error: 'invalid_auth', response_metadata: {} }\n}","errorMessage":"An API error occurred: invalid_auth","errorStack":"Error: An API error occurred: invalid_auth\n    at platformErrorFromResult (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/errors.js:67:33)\n    at WebClient.<anonymous> (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/WebClient.js:242:60)\n    at Generator.next (<anonymous>)\n    at fulfilled (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/WebClient.js:38:58)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)","msg":"❌ [Slack Socket Mode] Failed to initialize"}
+{"level":"info","time":"2025-11-09T04:09:59.942Z","name":"Mastra","statusCode":200,"responseTime":291,"pingNumber":1,"successRate":"100.0%","msg":"✅ [Keep-Alive] Ping successful"}
+==> Your service is live 🎉
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://stirlo-stirling.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
