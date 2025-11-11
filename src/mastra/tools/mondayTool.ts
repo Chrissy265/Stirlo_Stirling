@@ -44,6 +44,82 @@ async function queryMonday(query: string): Promise<any> {
   return result.data;
 }
 
+/**
+ * Extract meaningful keywords from a search query
+ * Removes minimal set of common stop words
+ * Preserves short words (acronyms like AI, HR, UX) that aren't stop words
+ */
+function extractKeywords(query: string): string[] {
+  const stopWords = new Set([
+    'a', 'an', 'the', 'and', 'or', 'but',
+    'in', 'on', 'at', 'to', 'for', 'of', 'with',
+    'is', 'are', 'was', 'were', 'be', 'been',
+    'have', 'has', 'had',
+    'do', 'does', 'did',
+    'can', 'could', 'will', 'would', 'should',
+    'this', 'that', 'these', 'those',
+    'i', 'you', 'he', 'she', 'it', 'we', 'they',
+    'my', 'your', 'his', 'her', 'its', 'our', 'their'
+  ]);
+  
+  const words = query
+    .toLowerCase()
+    .split(/\s+/)
+    .map(word => word.replace(/[^\w]/g, ''))
+    .filter(word => word.length > 0 && !stopWords.has(word));
+  
+  if (words.length === 0) {
+    return [query.toLowerCase()];
+  }
+  
+  return words;
+}
+
+/**
+ * Check if text contains any of the keywords
+ */
+function matchesKeywords(text: string | null | undefined, keywords: string[]): boolean {
+  if (!text) return false;
+  const textLower = text.toLowerCase();
+  return keywords.some(keyword => textLower.includes(keyword));
+}
+
+/**
+ * Calculate relevance score based on keyword matches
+ */
+function calculateRelevance(item: any, keywords: string[], assets?: any[], updates?: any[], columnValues?: any[], columnTitleMap?: Map<string, ColumnInfo>): number {
+  let score = 0;
+  
+  keywords.forEach(keyword => {
+    if (item.name?.toLowerCase().includes(keyword)) score += 3;
+    
+    if (assets) {
+      assets.forEach((asset: any) => {
+        if (asset.name?.toLowerCase().includes(keyword)) score += 2;
+      });
+    }
+    
+    if (updates) {
+      updates.forEach((update: any) => {
+        if (update.text_body?.toLowerCase().includes(keyword)) score += 1;
+      });
+    }
+    
+    if (columnValues) {
+      columnValues.forEach((col: any) => {
+        if (col.text?.toLowerCase().includes(keyword)) score += 1;
+        
+        if (columnTitleMap) {
+          const colInfo = columnTitleMap.get(col.id);
+          if (colInfo?.title?.toLowerCase().includes(keyword)) score += 1;
+        }
+      });
+    }
+  });
+  
+  return score;
+}
+
 export const mondaySearchTool = createTool({
   id: "monday-search-tasks",
   description: `Search and retrieve tasks, items, and information from monday.com workspace. Use this when users ask about tasks, project status, deadlines, assignments, or board information.`,
@@ -125,8 +201,12 @@ export const mondaySearchTool = createTool({
       
       logger?.info('📋 [monday.com] Processing results', { boardsCount: data.boards.length });
       
-      // Filter and process results based on search query
-      const searchLower = context.searchQuery.toLowerCase();
+      const keywords = extractKeywords(context.searchQuery);
+      logger?.info('📋 [monday.com] Extracted keywords', { 
+        originalQuery: context.searchQuery,
+        keywords 
+      });
+      
       let totalItems = 0;
       const workspacesFound = new Set<string>();
       
@@ -150,13 +230,13 @@ export const mondaySearchTool = createTool({
             columns.map((col: any) => [col.id, { title: col.title, type: col.type }])
           );
           
-          // Filter items that match the search query
+          // Filter items that match the search query using keywords
           const matchingItems = items.filter((item: any) => {
-            const nameMatch = item.name?.toLowerCase().includes(searchLower);
+            const nameMatch = matchesKeywords(item.name, keywords);
             const columnMatch = item.column_values?.some((col: any) => {
               const colInfo = columnTitleMap.get(col.id);
-              return col.text?.toLowerCase().includes(searchLower) ||
-                     colInfo?.title?.toLowerCase().includes(searchLower);
+              return matchesKeywords(col.text, keywords) ||
+                     matchesKeywords(colInfo?.title, keywords);
             });
             
             // If looking for deadlines, prioritize items with date columns
@@ -171,19 +251,26 @@ export const mondaySearchTool = createTool({
             }
             
             return nameMatch || columnMatch;
-          }).map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            state: item.state,
-            columnValues: item.column_values?.map((col: any) => {
+          }).map((item: any) => {
+            const columnValues = item.column_values?.map((col: any) => {
               const colInfo = columnTitleMap.get(col.id);
               return {
                 title: colInfo?.title || col.id,
                 text: col.text || '',
                 value: col.value || '',
               };
-            }) || [],
-          }));
+            }) || [];
+            
+            const relevanceScore = calculateRelevance(item, keywords, undefined, undefined, item.column_values, columnTitleMap);
+            
+            return {
+              id: item.id,
+              name: item.name,
+              state: item.state,
+              relevanceScore,
+              columnValues,
+            };
+          }).sort((a: any, b: any) => b.relevanceScore - a.relevanceScore);
           
           totalItems += matchingItems.length;
           
@@ -199,10 +286,16 @@ export const mondaySearchTool = createTool({
       
       const workspaceList = Array.from(workspacesFound);
       
+      const topResults = filteredBoards
+        .flatMap((board: any) => board.items.map((item: any) => ({ name: item.name, score: item.relevanceScore })))
+        .sort((a: any, b: any) => b.score - a.score)
+        .slice(0, 3);
+      
       logger?.info('✅ [monday.com] Search completed successfully', { 
         boardsWithMatches: filteredBoards.length,
         totalMatchingItems: totalItems,
         workspacesSearched: workspaceList,
+        topResults,
       });
       
       return {
@@ -445,7 +538,7 @@ export const mondaySearchWithDocsTool = createTool({
     try {
       const query = `
         query {
-          boards (limit: 15) {
+          boards (limit: 50) {
             id
             name
             workspace {
@@ -457,7 +550,7 @@ export const mondaySearchWithDocsTool = createTool({
               title
               type
             }
-            items_page (limit: 30) {
+            items_page (limit: 20) {
               items {
                 id
                 name
@@ -498,7 +591,12 @@ export const mondaySearchWithDocsTool = createTool({
       
       logger?.info('📄 [monday.com Docs] Processing results', { boardsCount: data.boards.length });
       
-      const searchLower = context.searchQuery.toLowerCase();
+      const keywords = extractKeywords(context.searchQuery);
+      logger?.info('📄 [monday.com Docs] Extracted keywords', { 
+        originalQuery: context.searchQuery,
+        keywords 
+      });
+      
       const allItems: any[] = [];
       let totalFiles = 0;
       let totalUpdates = 0;
@@ -526,25 +624,25 @@ export const mondaySearchWithDocsTool = createTool({
           const updates = item.updates || [];
           const columnValues = item.column_values || [];
           
-          const nameMatch = item.name?.toLowerCase().includes(searchLower);
+          const nameMatch = matchesKeywords(item.name, keywords);
           
           const fileMatch = assets.some((asset: any) => 
-            asset.name?.toLowerCase().includes(searchLower)
+            matchesKeywords(asset.name, keywords)
           );
           
           const updateMatch = updates.some((update: any) => 
-            update.text_body?.toLowerCase().includes(searchLower)
+            matchesKeywords(update.text_body, keywords)
           );
           
           const docColumnMatch = columnValues.some((col: any) => {
             const colInfo = columnTitleMap.get(col.id);
-            return colInfo?.type === 'doc' && col.text?.toLowerCase().includes(searchLower);
+            return colInfo?.type === 'doc' && matchesKeywords(col.text, keywords);
           });
           
           const columnMatch = columnValues.some((col: any) => {
             const colInfo = columnTitleMap.get(col.id);
-            return col.text?.toLowerCase().includes(searchLower) ||
-                   colInfo?.title?.toLowerCase().includes(searchLower);
+            return matchesKeywords(col.text, keywords) ||
+                   matchesKeywords(colInfo?.title, keywords);
           });
           
           if (nameMatch || fileMatch || updateMatch || docColumnMatch || columnMatch) {
@@ -577,6 +675,8 @@ export const mondaySearchWithDocsTool = createTool({
             totalFiles += files.length;
             totalUpdates += itemUpdates.length;
             
+            const relevanceScore = calculateRelevance(item, keywords, assets, updates, columnValues, columnTitleMap);
+            
             allItems.push({
               boardName: board.name,
               boardId: board.id,
@@ -585,6 +685,7 @@ export const mondaySearchWithDocsTool = createTool({
               itemId: item.id,
               itemName: item.name,
               state: item.state,
+              relevanceScore,
               taskInfo: {
                 columnValues: columnValues.map((col: any) => {
                   const colInfo = columnTitleMap.get(col.id);
@@ -605,6 +706,8 @@ export const mondaySearchWithDocsTool = createTool({
         });
       });
       
+      allItems.sort((a, b) => b.relevanceScore - a.relevanceScore);
+      
       const workspaceList = Array.from(workspacesFound);
       
       logger?.info('✅ [monday.com Docs] Search completed successfully', { 
@@ -612,6 +715,7 @@ export const mondaySearchWithDocsTool = createTool({
         totalFiles,
         totalUpdates,
         workspacesSearched: workspaceList,
+        topResults: allItems.slice(0, 3).map(i => ({ name: i.itemName, score: i.relevanceScore }))
       });
       
       return {
