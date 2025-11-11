@@ -57,6 +57,8 @@ export const mondaySearchTool = createTool({
     boards: z.array(z.object({
       id: z.string(),
       name: z.string(),
+      workspaceName: z.string().optional(),
+      workspaceId: z.string().optional(),
       items: z.array(z.object({
         id: z.string(),
         name: z.string(),
@@ -69,6 +71,7 @@ export const mondaySearchTool = createTool({
       })),
     })),
     totalItems: z.number(),
+    workspacesSearched: z.array(z.string()),
   }),
   
   execute: async ({ context, mastra }) => {
@@ -85,6 +88,10 @@ export const mondaySearchTool = createTool({
           boards (limit: 50) {
             id
             name
+            workspace {
+              id
+              name
+            }
             columns {
               id
               title
@@ -113,7 +120,7 @@ export const mondaySearchTool = createTool({
       
       if (!data || !data.boards) {
         logger?.warn('⚠️ [monday.com] No boards found');
-        return { boards: [], totalItems: 0 };
+        return { boards: [], totalItems: 0, workspacesSearched: [] };
       }
       
       logger?.info('📋 [monday.com] Processing results', { boardsCount: data.boards.length });
@@ -121,9 +128,20 @@ export const mondaySearchTool = createTool({
       // Filter and process results based on search query
       const searchLower = context.searchQuery.toLowerCase();
       let totalItems = 0;
+      const workspacesFound = new Set<string>();
       
       const filteredBoards = data.boards
         .map((board: any) => {
+          const workspace = board.workspace || {};
+          if (workspace.name) {
+            workspacesFound.add(workspace.name);
+          }
+          logger?.debug('📋 [monday.com] Processing board', { 
+            boardName: board.name,
+            workspaceName: workspace.name || 'Main Workspace',
+            workspaceId: workspace.id || 'null'
+          });
+          
           const items = board.items_page?.items || [];
           const columns = board.columns || [];
           
@@ -172,19 +190,25 @@ export const mondaySearchTool = createTool({
           return {
             id: board.id,
             name: board.name,
+            workspaceName: workspace.name || 'Main Workspace',
+            workspaceId: workspace.id?.toString() || null,
             items: matchingItems,
           };
         })
         .filter((board: any) => board.items.length > 0);
       
+      const workspaceList = Array.from(workspacesFound);
+      
       logger?.info('✅ [monday.com] Search completed successfully', { 
         boardsWithMatches: filteredBoards.length,
-        totalMatchingItems: totalItems 
+        totalMatchingItems: totalItems,
+        workspacesSearched: workspaceList,
       });
       
       return {
         boards: filteredBoards,
         totalItems,
+        workspacesSearched: workspaceList.length > 0 ? workspaceList : ['Main Workspace'],
       };
     } catch (error: any) {
       logger?.error('❌ [monday.com] Error occurred', { 
@@ -207,6 +231,9 @@ export const mondayGetUpcomingDeadlinesTool = createTool({
   outputSchema: z.object({
     upcomingTasks: z.array(z.object({
       boardName: z.string(),
+      boardId: z.string(),
+      workspaceName: z.string().optional(),
+      workspaceId: z.string().optional(),
       itemName: z.string(),
       deadline: z.string(),
       daysUntilDeadline: z.number(),
@@ -214,6 +241,7 @@ export const mondayGetUpcomingDeadlinesTool = createTool({
       status: z.string().optional(),
     })),
     totalUpcoming: z.number(),
+    workspacesSearched: z.array(z.string()),
   }),
   
   execute: async ({ context, mastra }) => {
@@ -226,6 +254,10 @@ export const mondayGetUpcomingDeadlinesTool = createTool({
           boards (limit: 50) {
             id
             name
+            workspace {
+              id
+              name
+            }
             columns {
               id
               title
@@ -254,7 +286,7 @@ export const mondayGetUpcomingDeadlinesTool = createTool({
       
       if (!data || !data.boards) {
         logger?.warn('⚠️ [monday.com Deadlines] No boards found');
-        return { upcomingTasks: [], totalUpcoming: 0 };
+        return { upcomingTasks: [], totalUpcoming: 0, workspacesSearched: [] };
       }
       
       const now = new Date();
@@ -262,9 +294,19 @@ export const mondayGetUpcomingDeadlinesTool = createTool({
       futureDate.setDate(futureDate.getDate() + context.daysAhead);
       
       const upcomingTasks: any[] = [];
+      const workspacesFound = new Set<string>();
       
       // Process all boards and items
       data.boards.forEach((board: any) => {
+        const workspace = board.workspace || {};
+        if (workspace.name) {
+          workspacesFound.add(workspace.name);
+        }
+        logger?.debug('📅 [monday.com Deadlines] Processing board', { 
+          boardName: board.name,
+          workspaceName: workspace.name || 'Main Workspace',
+          workspaceId: workspace.id || 'null'
+        });
         const items = board.items_page?.items || [];
         const columns = board.columns || [];
         
@@ -299,6 +341,9 @@ export const mondayGetUpcomingDeadlinesTool = createTool({
                   
                   upcomingTasks.push({
                     boardName: board.name,
+                    boardId: board.id,
+                    workspaceName: workspace.name || 'Main Workspace',
+                    workspaceId: workspace.id?.toString() || null,
                     itemName: item.name,
                     deadline: deadline.toISOString(),
                     daysUntilDeadline: daysUntil,
@@ -317,13 +362,17 @@ export const mondayGetUpcomingDeadlinesTool = createTool({
       // Sort by deadline (soonest first)
       upcomingTasks.sort((a, b) => a.daysUntilDeadline - b.daysUntilDeadline);
       
+      const workspaceList = Array.from(workspacesFound);
+      
       logger?.info('✅ [monday.com Deadlines] Found upcoming deadlines', { 
-        totalUpcoming: upcomingTasks.length 
+        totalUpcoming: upcomingTasks.length,
+        workspacesSearched: workspaceList,
       });
       
       return {
         upcomingTasks,
         totalUpcoming: upcomingTasks.length,
+        workspacesSearched: workspaceList.length > 0 ? workspaceList : ['Main Workspace'],
       };
     } catch (error: any) {
       logger?.error('❌ [monday.com Deadlines] Error occurred', { 
@@ -348,6 +397,9 @@ export const mondaySearchWithDocsTool = createTool({
   outputSchema: z.object({
     items: z.array(z.object({
       boardName: z.string(),
+      boardId: z.string(),
+      workspaceName: z.string().optional(),
+      workspaceId: z.string().optional(),
       itemId: z.string(),
       itemName: z.string(),
       state: z.string().optional(),
@@ -379,6 +431,7 @@ export const mondaySearchWithDocsTool = createTool({
     totalItems: z.number(),
     totalFiles: z.number(),
     totalUpdates: z.number(),
+    workspacesSearched: z.array(z.string()),
   }),
   
   execute: async ({ context, mastra }) => {
@@ -395,6 +448,10 @@ export const mondaySearchWithDocsTool = createTool({
           boards (limit: 15) {
             id
             name
+            workspace {
+              id
+              name
+            }
             columns {
               id
               title
@@ -436,7 +493,7 @@ export const mondaySearchWithDocsTool = createTool({
       
       if (!data || !data.boards) {
         logger?.warn('⚠️ [monday.com Docs] No boards found');
-        return { items: [], totalItems: 0, totalFiles: 0, totalUpdates: 0 };
+        return { items: [], totalItems: 0, totalFiles: 0, totalUpdates: 0, workspacesSearched: [] };
       }
       
       logger?.info('📄 [monday.com Docs] Processing results', { boardsCount: data.boards.length });
@@ -445,8 +502,18 @@ export const mondaySearchWithDocsTool = createTool({
       const allItems: any[] = [];
       let totalFiles = 0;
       let totalUpdates = 0;
+      const workspacesFound = new Set<string>();
       
       data.boards.forEach((board: any) => {
+        const workspace = board.workspace || {};
+        if (workspace.name) {
+          workspacesFound.add(workspace.name);
+        }
+        logger?.debug('📄 [monday.com Docs] Processing board', { 
+          boardName: board.name,
+          workspaceName: workspace.name || 'Main Workspace',
+          workspaceId: workspace.id || 'null'
+        });
         const items = board.items_page?.items || [];
         const columns = board.columns || [];
         
@@ -512,6 +579,9 @@ export const mondaySearchWithDocsTool = createTool({
             
             allItems.push({
               boardName: board.name,
+              boardId: board.id,
+              workspaceName: workspace.name || 'Main Workspace',
+              workspaceId: workspace.id?.toString() || null,
               itemId: item.id,
               itemName: item.name,
               state: item.state,
@@ -535,10 +605,13 @@ export const mondaySearchWithDocsTool = createTool({
         });
       });
       
+      const workspaceList = Array.from(workspacesFound);
+      
       logger?.info('✅ [monday.com Docs] Search completed successfully', { 
         totalItems: allItems.length,
         totalFiles,
         totalUpdates,
+        workspacesSearched: workspaceList,
       });
       
       return {
@@ -546,6 +619,7 @@ export const mondaySearchWithDocsTool = createTool({
         totalItems: allItems.length,
         totalFiles,
         totalUpdates,
+        workspacesSearched: workspaceList.length > 0 ? workspaceList : ['Main Workspace'],
       };
     } catch (error: any) {
       logger?.error('❌ [monday.com Docs] Error occurred', { 
@@ -553,6 +627,73 @@ export const mondaySearchWithDocsTool = createTool({
         stack: error.stack 
       });
       throw new Error(`monday.com documentation search failed: ${error.message}`);
+    }
+  },
+});
+
+export const mondayListWorkspacesTool = createTool({
+  id: "monday-list-workspaces",
+  description: `List all available Monday.com workspaces. Use this when users ask about available workspaces, want to know what workspaces exist, or need to understand the workspace structure.`,
+  
+  inputSchema: z.object({}),
+  
+  outputSchema: z.object({
+    workspaces: z.array(z.object({
+      id: z.string(),
+      name: z.string(),
+      kind: z.string().optional(),
+      description: z.string().optional(),
+    })),
+    totalWorkspaces: z.number(),
+  }),
+  
+  execute: async ({ mastra }) => {
+    const logger = mastra?.getLogger();
+    logger?.info('🗂️ [monday.com Workspaces] Fetching workspace list');
+    
+    try {
+      const query = `
+        query {
+          workspaces {
+            id
+            name
+            kind
+            description
+          }
+        }
+      `;
+      
+      logger?.info('🗂️ [monday.com Workspaces] Querying API for workspaces');
+      
+      const data = await queryMonday(query);
+      
+      if (!data || !data.workspaces) {
+        logger?.warn('⚠️ [monday.com Workspaces] No workspaces found');
+        return { workspaces: [], totalWorkspaces: 0 };
+      }
+      
+      const workspaces = data.workspaces.map((ws: any) => ({
+        id: ws.id?.toString() || '',
+        name: ws.name || 'Unnamed Workspace',
+        kind: ws.kind || '',
+        description: ws.description || '',
+      }));
+      
+      logger?.info('✅ [monday.com Workspaces] Retrieved workspaces successfully', { 
+        totalWorkspaces: workspaces.length,
+        workspaceNames: workspaces.map((ws: any) => ws.name),
+      });
+      
+      return {
+        workspaces,
+        totalWorkspaces: workspaces.length,
+      };
+    } catch (error: any) {
+      logger?.error('❌ [monday.com Workspaces] Error occurred', { 
+        error: error.message,
+        stack: error.stack 
+      });
+      throw new Error(`monday.com workspace list failed: ${error.message}`);
     }
   },
 });
