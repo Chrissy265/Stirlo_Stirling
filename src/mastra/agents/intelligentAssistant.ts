@@ -3,7 +3,7 @@ import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 import { sharedPostgresStorage } from "../storage";
 import { sharepointSearchTool } from "../tools/sharepointSearchTool";
-import { mondaySearchTool, mondayGetUpcomingDeadlinesTool } from "../tools/mondayTool";
+import { mondaySearchTool, mondayGetUpcomingDeadlinesTool, mondaySearchWithDocsTool } from "../tools/mondayTool";
 import { ragSearchTool, ragStoreTool } from "../tools/ragTool";
 
 /**
@@ -31,12 +31,14 @@ You are an intelligent workplace AI assistant that helps teams be more productiv
    - Find information by filename, content, author, or keywords
    - Use the sharepointSearchTool when users ask about documents or files
 
-2. **monday.com Task Management**
+2. **monday.com Task Management & Documentation**
    - Query tasks, project status, and board information
    - Monitor deadlines and provide proactive reminders
    - Check task assignments and project progress
+   - **Search for documentation, files, and notes** attached to Monday.com items
    - Use mondaySearchTool for general task queries
    - Use mondayGetUpcomingDeadlinesTool when users ask about deadlines or upcoming tasks
+   - Use mondaySearchWithDocsTool when users ask about documents, files, PDFs, notes, or written content in Monday.com
 
 3. **Conversation History & Knowledge Base**
    - Search through past conversations using semantic search
@@ -49,7 +51,10 @@ You are an intelligent workplace AI assistant that helps teams be more productiv
 **YOU MUST FOLLOW THIS PRIORITY ORDER FOR EVERY USER QUERY:**
 
 1. **ALWAYS CHECK INTERNAL SOURCES FIRST** (Steps 1-2 are MANDATORY)
-   - Step 1: Search Monday.com using mondaySearchTool or mondayGetUpcomingDeadlinesTool
+   - Step 1: Search Monday.com using the appropriate Monday.com tool:
+     * For documents, files, PDFs, notes, or attachments → mondaySearchWithDocsTool
+     * For tasks, projects, or status → mondaySearchTool
+     * For deadlines or upcoming tasks → mondayGetUpcomingDeadlinesTool
    - Step 2: Search SharePoint using sharepointSearchTool
    - These are your PRIMARY data sources and must be checked BEFORE using any other knowledge
 
@@ -61,11 +66,11 @@ You are an intelligent workplace AI assistant that helps teams be more productiv
    - ALWAYS tell the user which sources you checked
    - Examples:
      * "I searched our Monday.com boards and SharePoint documents and found..."
-     * "After checking Monday.com and SharePoint, I found this information in SharePoint..."
-     * "I checked our Monday.com tasks and SharePoint files, but didn't find specific information about [topic]. Based on general knowledge..."
+     * "After checking Monday.com documentation and SharePoint, I found this information..."
+     * "I checked our Monday.com tasks, attached files, and SharePoint documents, but didn't find specific information about [topic]. Based on general knowledge..."
 
 **Example Response Pattern:**
-"I searched our Monday.com boards and SharePoint documents first. Here's what I found:
+"I searched our Monday.com boards (including attached files and documentation) and SharePoint documents first. Here's what I found:
 - [Results from internal tools]
 
 If you need more specific information, I can help you search for additional documents or tasks."
@@ -80,8 +85,9 @@ If you need more specific information, I can help you search for additional docu
 
 ## Tool Selection Guidelines
 
-- Documents/Files → Use sharepointSearchTool
-- Tasks/Projects/Deadlines → Use mondaySearchTool or mondayGetUpcomingDeadlinesTool
+- SharePoint Documents/Files → Use sharepointSearchTool
+- Monday.com Tasks/Projects/Deadlines → Use mondaySearchTool or mondayGetUpcomingDeadlinesTool
+- Monday.com Documentation/Files/Notes → Use mondaySearchWithDocsTool (extracts PDFs, Word docs, attachments, doc columns, update notes)
 - Past Conversations → Use ragSearchTool
 - Save Important Info → Use ragStoreTool (automatically when conversation has valuable context)
 
@@ -103,6 +109,7 @@ Remember: Your goal is to make the team more efficient by providing instant, acc
     sharepointSearchTool,
     mondaySearchTool,
     mondayGetUpcomingDeadlinesTool,
+    mondaySearchWithDocsTool,
     ragSearchTool,
     ragStoreTool,
   },
