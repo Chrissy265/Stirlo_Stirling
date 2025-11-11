@@ -12,7 +12,7 @@ import { sharedPostgresStorage } from "./storage";
 import { inngest, inngestServe } from "./inngest";
 import { intelligentAssistant } from "./agents/intelligentAssistant";
 import { sharepointSearchTool } from "./tools/sharepointSearchTool";
-import { mondaySearchTool, mondayGetUpcomingDeadlinesTool } from "./tools/mondayTool";
+import { mondaySearchTool, mondayGetUpcomingDeadlinesTool, mondaySearchWithDocsTool } from "./tools/mondayTool";
 import { ragSearchTool, ragStoreTool } from "./tools/ragTool";
 import { slackIntelligentAssistantWorkflow } from "./workflows/slackIntelligentAssistantWorkflow";
 import { initializeSocketMode, getSlackTestRoute } from "../triggers/slackTriggers";
@@ -90,6 +90,7 @@ export const mastra = new Mastra({
         sharepointSearchTool,
         mondaySearchTool,
         mondayGetUpcomingDeadlinesTool,
+        mondaySearchWithDocsTool,
         ragSearchTool,
         ragStoreTool,
       },
