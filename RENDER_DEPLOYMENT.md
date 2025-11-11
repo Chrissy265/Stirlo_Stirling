@@ -310,3 +310,48 @@ After successful deployment:
 **Health Check**: `https://stirlo-stirling.onrender.com/api/health`
 
 **Status**: ✅ Ready for deployment!
+
+---
+
+## Recent Improvements
+
+### Keyword-Based Search (Nov 2025)
+
+**Problem Solved**: Users searching for "client roundtable documentation" weren't finding "Roundtable events" items because the system required exact phrase matches.
+
+**Solution**: Implemented intelligent keyword-based search with relevance scoring:
+
+1. **Keyword Extraction**:
+   - Splits queries into individual words
+   - Removes only standard English stop words (a, an, the, and, or, in, on, at, to, for, of, with, etc.)
+   - Preserves ALL meaningful words including acronyms (AI, HR, UX)
+   - Example: "Find AI client roundtable documentation" → `["find", "ai", "client", "roundtable", "documentation"]`
+
+2. **Smart Matching**:
+   - OR logic: Matches if ANY keyword found (not all required)
+   - Searches across: item names, file names, updates, column text, **and column titles**
+   - Case-insensitive matching
+
+3. **Relevance Scoring**:
+   - Item name match: **+3 points** per keyword
+   - File name match: **+2 points** per keyword
+   - Update/column/column title match: **+1 point** per keyword
+   - Results sorted by total score (highest first)
+
+4. **Applied to Both Tools**:
+   - `mondaySearchTool`: Searches 50 boards × 100 items
+   - `mondaySearchWithDocsTool`: Searches 50 boards × 20 items with full documentation
+
+**Example Results**:
+- Query: "status column tasks" → Keywords: `["status", "column", "tasks"]`
+- Top result: "Our Gold Drupal Certified Partner status" (score: 5)
+  - "status" in name (+3) + "column" in column title (+1) + "status" in column title (+1) = 5 points
+- Found 471 matching items across 15 boards, ranked by relevance
+
+**Benefits**:
+- ✅ Natural language search (no exact phrases required)
+- ✅ Finds relevant items even with different wording
+- ✅ Acronym-friendly (AI, HR, UX preserved)
+- ✅ Column titles included in search
+- ✅ Consistent scoring across both search tools
+- ✅ Within Monday.com API complexity limits
