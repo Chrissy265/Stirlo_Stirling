@@ -392,7 +392,7 @@ export const mondaySearchWithDocsTool = createTool({
     try {
       const query = `
         query {
-          boards (limit: 50) {
+          boards (limit: 15) {
             id
             name
             columns {
@@ -400,7 +400,7 @@ export const mondaySearchWithDocsTool = createTool({
               title
               type
             }
-            items_page (limit: 100) {
+            items_page (limit: 30) {
               items {
                 id
                 name
