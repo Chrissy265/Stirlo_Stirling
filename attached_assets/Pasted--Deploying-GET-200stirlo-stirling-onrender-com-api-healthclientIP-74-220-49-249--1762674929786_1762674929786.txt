@@ -1,0 +1,37 @@
+     ==> Deploying...
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="74.220.49.249" requestID="a0d6579f-509f-40c7" responseTimeMS=4 responseBytes=547 userAgent="KeepAlive-Service/1.0"
+{"level":"info","time":"2025-11-09T07:54:31.269Z","name":"Mastra","statusCode":200,"responseTime":50,"pingNumber":2,"successRate":"100.0%","msg":"✅ [Keep-Alive] Ping successful"}
+==> Running 'cd .mastra/output && NODE_ENV=production node index.mjs'
+🚀 [Mastra] Initializing Mastra instance... {
+  environment: 'Render',
+  renderUrl: 'https://stirlo-stirling.onrender.com',
+  hasSlackAppToken: true,
+  hasSlackBotToken: true,
+  hasDatabase: true,
+  nodeEnv: 'production'
+}
+{"level":"warn","time":"2025-11-09T07:55:06.522Z","name":"Mastra","msg":"If you are using a custom instrumentation file or want to disable this warning, set the globalThis.___MASTRA_TELEMETRY___ variable to true in your instrumentation file."}
+🔌 [Slack] Using SLACK_BOT_TOKEN from environment
+🔍 [DEBUG] Bot token ends with: vhWDFiBl
+{"level":"warn","time":"2025-11-09T07:55:06.523Z","name":"Mastra","msg":"Mastra telemetry is deprecated and will be removed on the Nov 4th release. Instead use AI Tracing. More info can be found here: https://github.com/mastra-ai/mastra/issues/8577 and here: https://mastra.ai/en/docs/observability/ai-tracing/overview"}
+{"level":"info","time":"2025-11-09T07:55:06.529Z","name":"Mastra","workflowCount":1,"workflows":["slackIntelligentAssistantWorkflow"],"agentCount":1,"agents":["intelligentAssistant"],"msg":"✅ [Mastra] Validating configuration"}
+{"level":"info","time":"2025-11-09T07:55:06.529Z","name":"Mastra","msg":"✅ [Mastra] Configuration validated successfully"}
+{"level":"info","time":"2025-11-09T07:55:06.529Z","name":"Mastra","url":"https://stirlo-stirling.onrender.com","intervalMinutes":5,"msg":"🔄 [Keep-Alive] Initializing service for Render deployment"}
+{"level":"info","time":"2025-11-09T07:55:06.529Z","name":"Mastra","url":"https://stirlo-stirling.onrender.com/api/health","intervalMinutes":5,"intervalMs":300000,"msg":"🚀 [Keep-Alive] Service starting"}
+{"level":"info","time":"2025-11-09T07:55:06.548Z","name":"Mastra","msg":"✅ [Keep-Alive] Service started successfully"}
+{"level":"info","time":"2025-11-09T07:55:06.603Z","name":"Mastra","environment":"Render","renderServiceUrl":"https://stirlo-stirling.onrender.com","hasAppToken":true,"hasBotToken":true,"msg":"🔌 [Slack Socket Mode] Initializing Socket Mode connection"}
+{"level":"info","time":"2025-11-09T07:55:06.603Z","name":"Mastra","length":97,"endsWithLast8":"f1fecc8e","startsWithXapp":true,"msg":"🔍 [DEBUG] App token loaded"}
+{"level":"info","time":"2025-11-09T07:55:06.603Z","name":"Mastra","msg":"🔌 [Slack Socket Mode] Using SLACK_APP_TOKEN from environment"}
+{"level":"info","time":"2025-11-09T07:55:06.739Z","name":"Mastra","msg":" Mastra API running on port http://0.0.0.0:5000/api"}
+{"level":"info","time":"2025-11-09T07:55:06.816Z","name":"Mastra","botId":"B09QARV8M9A","userId":"U09Q3RHKD8V","msg":"🔌 [Slack Socket Mode] Bot authenticated"}
+{"level":"info","time":"2025-11-09T07:55:06.817Z","name":"Mastra","msg":"⏳ [Slack Socket Mode] Starting Socket Mode client..."}
+{"level":"info","time":"2025-11-09T07:55:06.845Z","name":"Mastra","statusCode":200,"responseTime":316,"pingNumber":1,"successRate":"100.0%","msg":"✅ [Keep-Alive] Ping successful"}
+{"level":"info","time":"2025-11-09T07:55:06.943Z","name":"Mastra","startDurationMs":126,"environment":"Render","botId":"B09QARV8M9A","userId":"U09Q3RHKD8V","msg":"🚀 [Slack Socket Mode] Socket Mode client started successfully"}
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="74.220.49.249" requestID="67f9c17f-20f9-4889" responseTimeMS=4 responseBytes=547 userAgent="KeepAlive-Service/1.0"
+     ==> Your service is live 🎉
+     ==> 
+     ==> ///////////////////////////////////////////////////////////
+     ==> 
+     ==> Available at your primary URL https://stirlo-stirling.onrender.com
+     ==> 
+     ==> ///////////////////////////////////////////////////////////

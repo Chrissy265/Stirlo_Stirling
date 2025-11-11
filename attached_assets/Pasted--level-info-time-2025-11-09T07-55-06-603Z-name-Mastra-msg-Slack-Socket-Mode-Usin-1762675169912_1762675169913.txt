@@ -1,0 +1,25 @@
+{"level":"info","time":"2025-11-09T07:55:06.603Z","name":"Mastra","msg":"🔌 [Slack Socket Mode] Using SLACK_APP_TOKEN from environment"}
+{"level":"info","time":"2025-11-09T07:55:06.739Z","name":"Mastra","msg":" Mastra API running on port http://0.0.0.0:5000/api"}
+{"level":"info","time":"2025-11-09T07:55:06.816Z","name":"Mastra","botId":"B09QARV8M9A","userId":"U09Q3RHKD8V","msg":"🔌 [Slack Socket Mode] Bot authenticated"}
+{"level":"info","time":"2025-11-09T07:55:06.817Z","name":"Mastra","msg":"⏳ [Slack Socket Mode] Starting Socket Mode client..."}
+{"level":"info","time":"2025-11-09T07:55:06.845Z","name":"Mastra","statusCode":200,"responseTime":316,"pingNumber":1,"successRate":"100.0%","msg":"✅ [Keep-Alive] Ping successful"}
+{"level":"info","time":"2025-11-09T07:55:06.943Z","name":"Mastra","startDurationMs":126,"environment":"Render","botId":"B09QARV8M9A","userId":"U09Q3RHKD8V","msg":"🚀 [Slack Socket Mode] Socket Mode client started successfully"}
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="74.220.49.249" requestID="67f9c17f-20f9-4889" responseTimeMS=4 responseBytes=547 userAgent="KeepAlive-Service/1.0"
+     ==> Your service is live 🎉
+     ==> 
+     ==> ///////////////////////////////////////////////////////////
+     ==> 
+     ==> Available at your primary URL https://stirlo-stirling.onrender.com
+     ==> 
+     ==> ///////////////////////////////////////////////////////////
+     [GET]200stirlo-stirling.onrender.com/clientIP="34.83.77.94" requestID="5470166b-edff-406e" responseTimeMS=6 responseBytes=1267 userAgent="Go-http-client/2.0"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="851c2f3f-8738-43a7" responseTimeMS=5 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="04bd6b76-99c3-4f83" responseTimeMS=2 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="07d2ab7b-254b-4a78" responseTimeMS=4 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="aa6af59b-acdd-4dfa" responseTimeMS=4 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="221336a5-4325-4d9f" responseTimeMS=4 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="4bc68ad4-bd1c-4378" responseTimeMS=2 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="88a6d7db-e3a6-4709" responseTimeMS=16 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="0a680b61-8af5-41eb" responseTimeMS=20 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="ec1be84a-51cc-440b" responseTimeMS=5 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="173.61.115.140" requestID="216772dd-bc4a-47c9" responseTimeMS=3 responseBytes=547 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
