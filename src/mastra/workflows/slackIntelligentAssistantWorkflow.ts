@@ -44,8 +44,10 @@ function splitTextIntoChunks(text: string, maxChunkSize: number = 2900): string[
     if (potentialChunk.length > maxChunkSize) {
       if (currentChunk) {
         chunks.push(currentChunk);
-        currentChunk = line;
-      } else {
+        currentChunk = '';
+      }
+      
+      if (line.length > maxChunkSize) {
         let remainingLine = line;
         while (remainingLine.length > maxChunkSize) {
           const breakPoint = remainingLine.lastIndexOf(' ', maxChunkSize);
@@ -54,6 +56,8 @@ function splitTextIntoChunks(text: string, maxChunkSize: number = 2900): string[
           remainingLine = remainingLine.substring(splitPoint).trim();
         }
         currentChunk = remainingLine;
+      } else {
+        currentChunk = line;
       }
     } else {
       currentChunk = potentialChunk;
@@ -64,7 +68,7 @@ function splitTextIntoChunks(text: string, maxChunkSize: number = 2900): string[
     chunks.push(currentChunk);
   }
 
-  return chunks;
+  return chunks.filter(chunk => chunk.length <= maxChunkSize);
 }
 
 const inputSchemaForWorkflow = z.object({
