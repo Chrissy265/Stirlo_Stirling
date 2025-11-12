@@ -29,6 +29,44 @@ function convertMarkdownToSlackFormat(text: string): string {
     });
 }
 
+function splitTextIntoChunks(text: string, maxChunkSize: number = 2900): string[] {
+  if (text.length <= maxChunkSize) {
+    return [text];
+  }
+
+  const chunks: string[] = [];
+  const lines = text.split('\n');
+  let currentChunk = '';
+
+  for (const line of lines) {
+    const potentialChunk = currentChunk ? `${currentChunk}\n${line}` : line;
+
+    if (potentialChunk.length > maxChunkSize) {
+      if (currentChunk) {
+        chunks.push(currentChunk);
+        currentChunk = line;
+      } else {
+        let remainingLine = line;
+        while (remainingLine.length > maxChunkSize) {
+          const breakPoint = remainingLine.lastIndexOf(' ', maxChunkSize);
+          const splitPoint = breakPoint > 0 ? breakPoint : maxChunkSize;
+          chunks.push(remainingLine.substring(0, splitPoint));
+          remainingLine = remainingLine.substring(splitPoint).trim();
+        }
+        currentChunk = remainingLine;
+      }
+    } else {
+      currentChunk = potentialChunk;
+    }
+  }
+
+  if (currentChunk) {
+    chunks.push(currentChunk);
+  }
+
+  return chunks;
+}
+
 const inputSchemaForWorkflow = z.object({
   message: z.string(),
   threadId: z.string(),
