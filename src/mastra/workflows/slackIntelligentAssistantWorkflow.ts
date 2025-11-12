@@ -146,15 +146,29 @@ const sendReplyStep = createStep({
         });
       }
       
+      const hyperlinkMatches = cleanResponse.match(/<https:\/\/[^>]+>/g) || [];
+      
       logger?.info('📤 [Slack Workflow] Step 2: Posting message to Slack', {
         channel,
         threadTs: messageTs,
         messageLength: cleanResponse.length,
+        firstHyperlinkSample: hyperlinkMatches[0] || 'No hyperlinks found',
+        hyperlinkCount: hyperlinkMatches.length,
+        messageSample: cleanResponse.substring(0, 300),
       });
       
       const result = await slack.chat.postMessage({
         channel,
         thread_ts: messageTs,
+        blocks: [
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: cleanResponse,
+            },
+          },
+        ],
         text: cleanResponse,
       });
       
