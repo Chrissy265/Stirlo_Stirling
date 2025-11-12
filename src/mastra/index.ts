@@ -14,6 +14,7 @@ import { intelligentAssistant } from "./agents/intelligentAssistant";
 import { sharepointSearchTool } from "./tools/sharepointSearchTool";
 import { mondaySearchTool, mondayGetUpcomingDeadlinesTool, mondaySearchWithDocsTool, mondayListWorkspacesTool } from "./tools/mondayTool";
 import { ragSearchTool, ragStoreTool } from "./tools/ragTool";
+import { internalSearchOrchestratorTool } from "./tools/internalSearchOrchestratorTool";
 import { slackIntelligentAssistantWorkflow } from "./workflows/slackIntelligentAssistantWorkflow";
 import { initializeSocketMode, getSlackTestRoute } from "../triggers/slackTriggers";
 import { getChatRoute, getHistoryRoute, getConversationRoute, getHealthRoute } from "../api/lovableRoutes";
@@ -87,6 +88,7 @@ export const mastra = new Mastra({
       name: "allTools",
       version: "1.0.0",
       tools: {
+        internalSearchOrchestratorTool,
         sharepointSearchTool,
         mondaySearchTool,
         mondayGetUpcomingDeadlinesTool,
