@@ -185,34 +185,45 @@ const sendReplyStep = createStep({
       }
       
       const hyperlinkMatches = cleanResponse.match(/<https:\/\/[^>]+>/g) || [];
+      const chunks = splitTextIntoChunks(cleanResponse, 2900);
+      
+      logger?.info('📤 [Slack Workflow] Step 2: Preparing message for Slack', {
+        channel,
+        threadTs: messageTs,
+        messageLength: cleanResponse.length,
+        chunkCount: chunks.length,
+        firstHyperlinkSample: hyperlinkMatches[0] || 'No hyperlinks found',
+        hyperlinkCount: hyperlinkMatches.length,
+        chunkLengths: chunks.map(c => c.length),
+        firstChunkSample: chunks[0]?.substring(0, 300),
+      });
+      
+      const blocks = chunks.map(chunk => ({
+        type: "section" as const,
+        text: {
+          type: "mrkdwn" as const,
+          text: chunk,
+        },
+      }));
       
       logger?.info('📤 [Slack Workflow] Step 2: Posting message to Slack', {
         channel,
         threadTs: messageTs,
-        messageLength: cleanResponse.length,
-        firstHyperlinkSample: hyperlinkMatches[0] || 'No hyperlinks found',
-        hyperlinkCount: hyperlinkMatches.length,
-        messageSample: cleanResponse.substring(0, 300),
+        blockCount: blocks.length,
+        totalBlocks: blocks.length,
       });
       
       const result = await slack.chat.postMessage({
         channel,
         thread_ts: messageTs,
-        blocks: [
-          {
-            type: "section",
-            text: {
-              type: "mrkdwn",
-              text: cleanResponse,
-            },
-          },
-        ],
-        text: cleanResponse,
+        blocks,
+        text: cleanResponse.substring(0, 3000),
       });
       
       logger?.info('✅ [Slack Workflow] Step 2: Message posted successfully', {
         messageTs: result.ts,
         ok: result.ok,
+        blocksPosted: blocks.length,
       });
       
       return { success: true };
