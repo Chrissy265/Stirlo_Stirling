@@ -589,6 +589,19 @@ export const mondaySearchWithDocsTool = createTool({
         return { items: [], totalItems: 0, totalFiles: 0, totalUpdates: 0, workspacesSearched: [] };
       }
       
+      logger?.info('📄 [monday.com Docs] API Response received', { 
+        boardsCount: data.boards.length,
+        sampleBoardStructure: data.boards[0] ? {
+          hasBoardName: !!data.boards[0].name,
+          hasWorkspace: !!data.boards[0].workspace,
+          hasColumns: !!data.boards[0].columns,
+          hasItemsPage: !!data.boards[0].items_page,
+          itemsCount: data.boards[0].items_page?.items?.length || 0,
+          firstItemHasAssets: data.boards[0].items_page?.items?.[0]?.assets !== undefined,
+          firstItemAssetsCount: data.boards[0].items_page?.items?.[0]?.assets?.length || 0,
+        } : null
+      });
+      
       logger?.info('📄 [monday.com Docs] Processing results', { boardsCount: data.boards.length });
       
       const keywords = extractKeywords(context.searchQuery);
@@ -619,10 +632,32 @@ export const mondaySearchWithDocsTool = createTool({
           columns.map((col: any) => [col.id, { title: col.title, type: col.type }])
         );
         
-        items.forEach((item: any) => {
+        items.forEach((item: any, itemIndex: number) => {
           const assets = item.assets || [];
           const updates = item.updates || [];
           const columnValues = item.column_values || [];
+          
+          logger?.debug('🔍 [monday.com Docs] Processing item', {
+            boardName: board.name,
+            itemIndex,
+            itemName: item.name,
+            itemId: item.id,
+            hasAssets: assets.length > 0,
+            assetsCount: assets.length,
+            assetsDetail: assets.length > 0 ? assets.slice(0, 3).map((a: any) => ({
+              id: a.id,
+              name: a.name,
+              hasUrl: !!a.url,
+              url: a.url?.substring(0, 100),
+              fileExtension: a.file_extension,
+            })) : 'No assets',
+            updatesCount: updates.length,
+            columnValuesCount: columnValues.length,
+            fileColumnCount: columnValues.filter((col: any) => {
+              const colInfo = columnTitleMap.get(col.id);
+              return colInfo?.type === 'file';
+            }).length,
+          });
           
           const nameMatch = matchesKeywords(item.name, keywords);
           
@@ -645,6 +680,16 @@ export const mondaySearchWithDocsTool = createTool({
                    matchesKeywords(colInfo?.title, keywords);
           });
           
+          logger?.debug('🔍 [monday.com Docs] Match results for item', {
+            itemName: item.name,
+            nameMatch,
+            fileMatch,
+            updateMatch,
+            docColumnMatch,
+            columnMatch,
+            willInclude: nameMatch || fileMatch || updateMatch || docColumnMatch || columnMatch,
+          });
+          
           if (nameMatch || fileMatch || updateMatch || docColumnMatch || columnMatch) {
             const files = context.includeFiles ? assets.map((asset: any) => ({
               id: asset.id,
@@ -652,6 +697,38 @@ export const mondaySearchWithDocsTool = createTool({
               url: asset.url,
               extension: asset.file_extension || '',
             })) : [];
+            
+            logger?.info('📎 [monday.com Docs] Files extracted from item', {
+              itemName: item.name,
+              includeFiles: context.includeFiles,
+              assetsArrayLength: assets.length,
+              filesExtracted: files.length,
+              fileSample: files.slice(0, 3).map((f: any) => ({ name: f.name, hasUrl: !!f.url })),
+            });
+            
+            // Check for file columns (separate from assets)
+            const fileColumns = columnValues.filter((col: any) => {
+              const colInfo = columnTitleMap.get(col.id);
+              return colInfo?.type === 'file';
+            });
+            
+            if (fileColumns.length > 0) {
+              logger?.info('📁 [monday.com Docs] Found file columns on item', {
+                itemName: item.name,
+                fileColumnsCount: fileColumns.length,
+                fileColumnsDetail: fileColumns.map((col: any) => {
+                  const colInfo = columnTitleMap.get(col.id);
+                  return {
+                    columnId: col.id,
+                    columnTitle: colInfo?.title || 'unknown',
+                    columnType: colInfo?.type,
+                    hasValue: !!col.value,
+                    hasText: !!col.text,
+                    valuePreview: col.value?.substring(0, 200),
+                  };
+                }),
+              });
+            }
             
             const docColumns = columnValues
               .filter((col: any) => {
