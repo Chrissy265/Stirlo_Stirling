@@ -85,6 +85,15 @@ function matchesKeywords(text: string | null | undefined, keywords: string[]): b
 }
 
 /**
+ * Check if text contains ALL keywords (for stricter multi-keyword matching)
+ */
+function matchesAllKeywords(text: string | null | undefined, keywords: string[]): boolean {
+  if (!text) return false;
+  const textLower = text.toLowerCase();
+  return keywords.every(keyword => textLower.includes(keyword));
+}
+
+/**
  * Check if a keyword matches as a whole word (not substring)
  * e.g., "sm" matches "SM Playbook" but not "SMS"
  */
@@ -718,38 +727,58 @@ export const mondaySearchWithDocsTool = createTool({
             }).length,
           });
           
-          const nameMatch = matchesKeywords(item.name, keywords);
+          // For multi-keyword queries (2+ keywords), check if ALL keywords appear somewhere in the item
+          // For single-keyword queries, use the original OR logic
+          const isMultiKeywordQuery = keywords.length >= 2;
           
-          const fileMatch = assets.some((asset: any) => 
-            matchesKeywords(asset.name, keywords)
-          );
+          let shouldIncludeItem = false;
           
-          const updateMatch = updates.some((update: any) => 
-            matchesKeywords(update.text_body, keywords)
-          );
-          
-          const docColumnMatch = columnValues.some((col: any) => {
-            const colInfo = columnTitleMap.get(col.id);
-            return colInfo?.type === 'doc' && matchesKeywords(col.text, keywords);
-          });
-          
-          const columnMatch = columnValues.some((col: any) => {
-            const colInfo = columnTitleMap.get(col.id);
-            return matchesKeywords(col.text, keywords) ||
-                   matchesKeywords(colInfo?.title, keywords);
-          });
+          if (isMultiKeywordQuery) {
+            // STRICT MATCHING: For multi-keyword queries, ALL keywords must appear somewhere
+            // Check if exact phrase exists anywhere (best match)
+            const exactPhraseMatch = 
+              item.name?.toLowerCase().includes(context.searchQuery.toLowerCase()) ||
+              assets.some((asset: any) => asset.name?.toLowerCase().includes(context.searchQuery.toLowerCase())) ||
+              updates.some((update: any) => update.text_body?.toLowerCase().includes(context.searchQuery.toLowerCase()));
+            
+            if (exactPhraseMatch) {
+              shouldIncludeItem = true;
+            } else {
+              // Check if ALL keywords appear as WHOLE WORDS somewhere in the item
+              const allText = [
+                item.name || '',
+                ...assets.map((a: any) => a.name || ''),
+                ...updates.map((u: any) => u.text_body || ''),
+                ...columnValues.map((c: any) => c.text || ''),
+              ].join(' ');
+              
+              shouldIncludeItem = keywords.every(keyword => matchesWholeWord(allText, keyword));
+            }
+          } else {
+            // LENIENT MATCHING: For single-keyword queries, use OR logic
+            const nameMatch = matchesKeywords(item.name, keywords);
+            const fileMatch = assets.some((asset: any) => matchesKeywords(asset.name, keywords));
+            const updateMatch = updates.some((update: any) => matchesKeywords(update.text_body, keywords));
+            const docColumnMatch = columnValues.some((col: any) => {
+              const colInfo = columnTitleMap.get(col.id);
+              return colInfo?.type === 'doc' && matchesKeywords(col.text, keywords);
+            });
+            const columnMatch = columnValues.some((col: any) => {
+              const colInfo = columnTitleMap.get(col.id);
+              return matchesKeywords(col.text, keywords) || matchesKeywords(colInfo?.title, keywords);
+            });
+            
+            shouldIncludeItem = nameMatch || fileMatch || updateMatch || docColumnMatch || columnMatch;
+          }
           
           logger?.debug('🔍 [monday.com Docs] Match results for item', {
             itemName: item.name,
-            nameMatch,
-            fileMatch,
-            updateMatch,
-            docColumnMatch,
-            columnMatch,
-            willInclude: nameMatch || fileMatch || updateMatch || docColumnMatch || columnMatch,
+            isMultiKeywordQuery,
+            keywordsCount: keywords.length,
+            willInclude: shouldIncludeItem,
           });
           
-          if (nameMatch || fileMatch || updateMatch || docColumnMatch || columnMatch) {
+          if (shouldIncludeItem) {
             // Extract files from assets array
             const filesFromAssets = context.includeFiles ? assets.map((asset: any) => ({
               id: asset.id,
