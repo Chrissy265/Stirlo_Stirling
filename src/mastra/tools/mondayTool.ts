@@ -572,6 +572,12 @@ export const mondaySearchWithDocsTool = createTool({
                   id
                   text_body
                   created_at
+                  assets {
+                    id
+                    name
+                    url
+                    file_extension
+                  }
                 }
                 ` : ''}
               }
@@ -699,9 +705,53 @@ export const mondaySearchWithDocsTool = createTool({
               extension: asset.file_extension || '',
             })) : [];
             
+            // Extract files from updates (files attached to comments/posts)
+            const filesFromUpdates: any[] = [];
+            if (context.includeFiles && context.includeUpdates && updates.length > 0) {
+              updates.forEach((update: any) => {
+                if (update.assets && Array.isArray(update.assets)) {
+                  update.assets.forEach((asset: any) => {
+                    if (asset.url && asset.name) {
+                      filesFromUpdates.push({
+                        id: asset.id,
+                        name: asset.name || 'Unnamed file',
+                        url: asset.url,
+                        extension: asset.file_extension || '',
+                      });
+                    }
+                  });
+                }
+              });
+              
+              if (filesFromUpdates.length > 0) {
+                logger?.info('📎 [monday.com Docs] Extracted files from updates', {
+                  itemName: item.name,
+                  updatesCount: updates.length,
+                  filesExtracted: filesFromUpdates.length,
+                  fileSample: filesFromUpdates.slice(0, 3).map((f: any) => ({ name: f.name, hasUrl: !!f.url })),
+                });
+              }
+            }
+            
             // Extract files from file-type columns
             const filesFromColumns: any[] = [];
             if (context.includeFiles) {
+              // Log all column types to understand what's available
+              logger?.info('📋 [monday.com Docs] Analyzing item columns', {
+                itemName: item.name,
+                totalColumns: columnValues.length,
+                columnTypes: columnValues.map((col: any) => {
+                  const colInfo = columnTitleMap.get(col.id);
+                  return {
+                    id: col.id,
+                    title: colInfo?.title || 'unknown',
+                    type: colInfo?.type || 'unknown',
+                    hasValue: !!col.value,
+                    hasText: !!col.text,
+                  };
+                }),
+              });
+              
               const fileColumns = columnValues.filter((col: any) => {
                 const colInfo = columnTitleMap.get(col.id);
                 return colInfo?.type === 'file';
@@ -780,13 +830,14 @@ export const mondaySearchWithDocsTool = createTool({
               });
             }
             
-            // Combine files from both assets and file columns
-            const files = [...filesFromAssets, ...filesFromColumns];
+            // Combine files from all sources: assets, file columns, and updates
+            const files = [...filesFromAssets, ...filesFromUpdates, ...filesFromColumns];
             
             logger?.info('📎 [monday.com Docs] Total files extracted from item', {
               itemName: item.name,
               includeFiles: context.includeFiles,
               filesFromAssets: filesFromAssets.length,
+              filesFromUpdates: filesFromUpdates.length,
               filesFromColumns: filesFromColumns.length,
               totalFilesExtracted: files.length,
               fileSample: files.slice(0, 3).map((f: any) => ({ name: f.name, hasUrl: !!f.url })),
