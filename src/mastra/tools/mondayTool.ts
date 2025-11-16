@@ -86,36 +86,74 @@ function matchesKeywords(text: string | null | undefined, keywords: string[]): b
 
 /**
  * Calculate relevance score based on keyword matches
+ * Heavily prioritizes exact phrase matches in item names
  */
-function calculateRelevance(item: any, keywords: string[], assets?: any[], updates?: any[], columnValues?: any[], columnTitleMap?: Map<string, ColumnInfo>): number {
+function calculateRelevance(item: any, keywords: string[], assets?: any[], updates?: any[], columnValues?: any[], columnTitleMap?: Map<string, ColumnInfo>, originalQuery?: string): number {
   let score = 0;
+  const itemNameLower = item.name?.toLowerCase() || '';
   
-  keywords.forEach(keyword => {
-    if (item.name?.toLowerCase().includes(keyword)) score += 3;
-    
-    if (assets) {
-      assets.forEach((asset: any) => {
-        if (asset.name?.toLowerCase().includes(keyword)) score += 2;
+  // EXACT PHRASE MATCH in item name gets massive boost (this is what users expect)
+  if (originalQuery && itemNameLower.includes(originalQuery.toLowerCase())) {
+    score += 100; // Exact phrase match is top priority
+  }
+  
+  // Count how many keywords match in the item name
+  const keywordsInName = keywords.filter(keyword => itemNameLower.includes(keyword));
+  
+  // Multi-keyword matches in name get significant boost
+  if (keywordsInName.length >= 2) {
+    score += keywordsInName.length * 10; // Strong multi-keyword match
+  } else if (keywordsInName.length === 1) {
+    score += 3; // Single keyword match (weak)
+  }
+  
+  // Check assets for keyword matches
+  if (assets) {
+    assets.forEach((asset: any) => {
+      const assetNameLower = asset.name?.toLowerCase() || '';
+      if (originalQuery && assetNameLower.includes(originalQuery.toLowerCase())) {
+        score += 5; // Exact phrase in file name
+      }
+      keywords.forEach(keyword => {
+        if (assetNameLower.includes(keyword)) score += 2;
       });
-    }
-    
-    if (updates) {
-      updates.forEach((update: any) => {
-        if (update.text_body?.toLowerCase().includes(keyword)) score += 1;
+    });
+  }
+  
+  // Check updates for keyword matches
+  if (updates) {
+    updates.forEach((update: any) => {
+      const updateTextLower = update.text_body?.toLowerCase() || '';
+      if (originalQuery && updateTextLower.includes(originalQuery.toLowerCase())) {
+        score += 3; // Exact phrase in update
+      }
+      keywords.forEach(keyword => {
+        if (updateTextLower.includes(keyword)) score += 1;
       });
-    }
-    
-    if (columnValues) {
-      columnValues.forEach((col: any) => {
-        if (col.text?.toLowerCase().includes(keyword)) score += 1;
-        
-        if (columnTitleMap) {
-          const colInfo = columnTitleMap.get(col.id);
-          if (colInfo?.title?.toLowerCase().includes(keyword)) score += 1;
+    });
+  }
+  
+  // Check column values for keyword matches
+  if (columnValues) {
+    columnValues.forEach((col: any) => {
+      const colTextLower = col.text?.toLowerCase() || '';
+      if (colTextLower) {
+        keywords.forEach(keyword => {
+          if (colTextLower.includes(keyword)) score += 1;
+        });
+      }
+      
+      if (columnTitleMap) {
+        const colInfo = columnTitleMap.get(col.id);
+        const colTitleLower = colInfo?.title?.toLowerCase() || '';
+        if (colTitleLower) {
+          keywords.forEach(keyword => {
+            if (colTitleLower.includes(keyword)) score += 1;
+          });
         }
-      });
-    }
-  });
+      }
+    });
+  }
   
   return score;
 }
@@ -261,7 +299,7 @@ export const mondaySearchTool = createTool({
               };
             }) || [];
             
-            const relevanceScore = calculateRelevance(item, keywords, undefined, undefined, item.column_values, columnTitleMap);
+            const relevanceScore = calculateRelevance(item, keywords, undefined, undefined, item.column_values, columnTitleMap, context.searchQuery);
             
             return {
               id: item.id,
@@ -270,7 +308,9 @@ export const mondaySearchTool = createTool({
               relevanceScore,
               columnValues,
             };
-          }).sort((a: any, b: any) => b.relevanceScore - a.relevanceScore);
+          })
+          .filter((item: any) => item.relevanceScore >= 10) // Filter out weak matches
+          .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore);
           
           totalItems += matchingItems.length;
           
@@ -865,7 +905,21 @@ export const mondaySearchWithDocsTool = createTool({
             totalFiles += files.length;
             totalUpdates += itemUpdates.length;
             
-            const relevanceScore = calculateRelevance(item, keywords, assets, updates, columnValues, columnTitleMap);
+            const relevanceScore = calculateRelevance(item, keywords, assets, updates, columnValues, columnTitleMap, context.searchQuery);
+            
+            // MINIMUM SCORE THRESHOLD: Filter out weak matches
+            // Items with score < 10 are likely irrelevant (only 1 keyword match)
+            // Exact phrase matches get 100+ score, multi-keyword matches get 20+ score
+            const MINIMUM_RELEVANCE_SCORE = 10;
+            
+            if (relevanceScore < MINIMUM_RELEVANCE_SCORE) {
+              logger?.debug('❌ [monday.com Docs] Item filtered out - relevance too low', {
+                itemName: item.name,
+                relevanceScore,
+                minimumRequired: MINIMUM_RELEVANCE_SCORE,
+              });
+              return; // Skip this item - not relevant enough
+            }
             
             allItems.push({
               boardName: board.name,
