@@ -45,6 +45,69 @@ async function queryMonday(query: string): Promise<any> {
 }
 
 /**
+ * Fetch folders from Monday.com workspaces
+ * Used to find docs folders like "SM Playbook"
+ */
+async function fetchFolders(workspaceIds?: number[]): Promise<any> {
+  let query = '';
+  
+  if (workspaceIds && workspaceIds.length > 0) {
+    // Query specific workspaces
+    query = `
+      query {
+        folders (workspace_ids: [${workspaceIds.join(', ')}]) {
+          id
+          name
+          color
+          parent {
+            id
+          }
+          workspace {
+            id
+            name
+          }
+        }
+      }
+    `;
+  } else {
+    // Query all workspaces first, then get their folders
+    const workspacesQuery = `
+      query {
+        workspaces {
+          id
+          name
+        }
+      }
+    `;
+    
+    const workspacesData = await queryMonday(workspacesQuery);
+    if (!workspacesData || !workspacesData.workspaces || workspacesData.workspaces.length === 0) {
+      return { folders: [] };
+    }
+    
+    const ids = workspacesData.workspaces.map((w: any) => w.id);
+    query = `
+      query {
+        folders (workspace_ids: [${ids.join(', ')}]) {
+          id
+          name
+          color
+          parent {
+            id
+          }
+          workspace {
+            id
+            name
+          }
+        }
+      }
+    `;
+  }
+  
+  return await queryMonday(query);
+}
+
+/**
  * Extract meaningful keywords from a search query
  * Removes minimal set of common stop words
  * Preserves short words (acronyms like AI, HR, UX) that aren't stop words
@@ -727,53 +790,33 @@ export const mondaySearchWithDocsTool = createTool({
             }).length,
           });
           
-          // For multi-keyword queries (2+ keywords), check if ALL keywords appear somewhere in the item
-          // For single-keyword queries, use the original OR logic
-          const isMultiKeywordQuery = keywords.length >= 2;
+          // LENIENT MATCHING: Check if ANY keywords appear in the item
+          // Use relevance scoring to rank exact matches and multi-keyword matches higher
+          const exactPhraseMatch = 
+            item.name?.toLowerCase().includes(context.searchQuery.toLowerCase()) ||
+            assets.some((asset: any) => asset.name?.toLowerCase().includes(context.searchQuery.toLowerCase())) ||
+            updates.some((update: any) => update.text_body?.toLowerCase().includes(context.searchQuery.toLowerCase()));
           
           let shouldIncludeItem = false;
           
-          if (isMultiKeywordQuery) {
-            // STRICT MATCHING: For multi-keyword queries, ALL keywords must appear somewhere
-            // Check if exact phrase exists anywhere (best match)
-            const exactPhraseMatch = 
-              item.name?.toLowerCase().includes(context.searchQuery.toLowerCase()) ||
-              assets.some((asset: any) => asset.name?.toLowerCase().includes(context.searchQuery.toLowerCase())) ||
-              updates.some((update: any) => update.text_body?.toLowerCase().includes(context.searchQuery.toLowerCase()));
-            
-            if (exactPhraseMatch) {
-              shouldIncludeItem = true;
-            } else {
-              // Check if ALL keywords appear as WHOLE WORDS somewhere in the item
-              const allText = [
-                item.name || '',
-                ...assets.map((a: any) => a.name || ''),
-                ...updates.map((u: any) => u.text_body || ''),
-                ...columnValues.map((c: any) => c.text || ''),
-              ].join(' ');
-              
-              shouldIncludeItem = keywords.every(keyword => matchesWholeWord(allText, keyword));
-            }
+          if (exactPhraseMatch) {
+            // Exact phrase match - always include
+            shouldIncludeItem = true;
           } else {
-            // LENIENT MATCHING: For single-keyword queries, use OR logic
-            const nameMatch = matchesKeywords(item.name, keywords);
-            const fileMatch = assets.some((asset: any) => matchesKeywords(asset.name, keywords));
-            const updateMatch = updates.some((update: any) => matchesKeywords(update.text_body, keywords));
-            const docColumnMatch = columnValues.some((col: any) => {
-              const colInfo = columnTitleMap.get(col.id);
-              return colInfo?.type === 'doc' && matchesKeywords(col.text, keywords);
-            });
-            const columnMatch = columnValues.some((col: any) => {
-              const colInfo = columnTitleMap.get(col.id);
-              return matchesKeywords(col.text, keywords) || matchesKeywords(colInfo?.title, keywords);
-            });
+            // Check if ANY keywords appear as whole words in the item
+            const allText = [
+              item.name || '',
+              ...assets.map((a: any) => a.name || ''),
+              ...updates.map((u: any) => u.text_body || ''),
+              ...columnValues.map((c: any) => c.text || ''),
+            ].join(' ');
             
-            shouldIncludeItem = nameMatch || fileMatch || updateMatch || docColumnMatch || columnMatch;
+            // Include if ANY keyword matches as a whole word
+            shouldIncludeItem = keywords.some(keyword => matchesWholeWord(allText, keyword));
           }
           
           logger?.debug('🔍 [monday.com Docs] Match results for item', {
             itemName: item.name,
-            isMultiKeywordQuery,
             keywordsCount: keywords.length,
             willInclude: shouldIncludeItem,
           });
@@ -993,6 +1036,103 @@ export const mondaySearchWithDocsTool = createTool({
           }
         });
       });
+      
+      // Search for folders (e.g., "SM Playbook" docs folder)
+      logger?.info('📁 [monday.com Folders] Fetching folders from all workspaces');
+      
+      try {
+        const foldersData = await fetchFolders();
+        const folders = foldersData?.folders || [];
+        
+        logger?.info('📁 [monday.com Folders] Retrieved folders', { 
+          foldersCount: folders.length,
+          folderNames: folders.slice(0, 10).map((f: any) => f.name),
+        });
+        
+        // Apply keyword matching to folders
+        folders.forEach((folder: any) => {
+          const folderName = folder.name || '';
+          const folderNameLower = folderName.toLowerCase();
+          
+          let shouldIncludeFolder = false;
+          
+          // Check for exact phrase match
+          const exactPhraseMatch = folderNameLower.includes(context.searchQuery.toLowerCase());
+          
+          if (exactPhraseMatch) {
+            shouldIncludeFolder = true;
+          } else {
+            // Include if ANY keyword matches as a whole word
+            shouldIncludeFolder = keywords.some(keyword => matchesWholeWord(folderName, keyword));
+          }
+          
+          logger?.debug('🔍 [monday.com Folders] Checking folder', {
+            folderName,
+            exactPhraseMatch,
+            keywordsMatched: keywords.filter(k => matchesWholeWord(folderName, k)),
+            shouldIncludeFolder,
+          });
+          
+          if (shouldIncludeFolder) {
+            // Calculate relevance score for folder (same logic as items)
+            let score = 0;
+            
+            // Exact phrase match
+            if (folderNameLower.includes(context.searchQuery.toLowerCase())) {
+              score += 100;
+            }
+            
+            // Multi-keyword matches
+            const keywordsInName = keywords.filter(keyword => matchesWholeWord(folderName, keyword));
+            if (keywordsInName.length >= 2) {
+              score += keywordsInName.length * 10;
+            } else if (keywordsInName.length === 1) {
+              score += 5; // Increased from 3 to ensure it passes the threshold
+            }
+            
+            const MINIMUM_RELEVANCE_SCORE = 4;
+            
+            if (score >= MINIMUM_RELEVANCE_SCORE) {
+              logger?.info('📁 [monday.com Folders] Folder matched', {
+                folderName,
+                folderId: folder.id,
+                relevanceScore: score,
+              });
+              
+              // Generate folder URL: https://stirling-marketing-net.monday.com/docs/{folder_id}
+              const folderUrl = `https://stirling-marketing-net.monday.com/docs/${folder.id}`;
+              
+              allItems.push({
+                type: 'folder',
+                folderId: folder.id?.toString() || '',
+                folderName: folder.name,
+                folderUrl,
+                relevanceScore: score,
+                boardName: 'Folder',
+                boardId: '',
+                workspaceName: folder.workspace?.name || '',
+                workspaceId: folder.workspace?.id?.toString() || '',
+                itemId: folder.id?.toString() || '',
+                itemName: folder.name,
+                state: '',
+                taskInfo: {
+                  columnValues: [],
+                },
+                documentation: {
+                  files: [],
+                  docColumns: [],
+                  updates: [],
+                },
+              });
+            }
+          }
+        });
+      } catch (folderError: any) {
+        logger?.warn('⚠️ [monday.com Folders] Failed to fetch folders', {
+          error: folderError.message,
+        });
+        // Continue with item results even if folder search fails
+      }
       
       allItems.sort((a, b) => b.relevanceScore - a.relevanceScore);
       
