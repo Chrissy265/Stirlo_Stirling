@@ -85,6 +85,19 @@ function matchesKeywords(text: string | null | undefined, keywords: string[]): b
 }
 
 /**
+ * Check if a keyword matches as a whole word (not substring)
+ * e.g., "sm" matches "SM Playbook" but not "SMS"
+ */
+function matchesWholeWord(text: string, keyword: string): boolean {
+  const textLower = text.toLowerCase();
+  const keywordLower = keyword.toLowerCase();
+  
+  // Use word boundary regex to match whole words only
+  const regex = new RegExp(`\\b${keywordLower}\\b`);
+  return regex.test(textLower);
+}
+
+/**
  * Calculate relevance score based on keyword matches
  * Heavily prioritizes exact phrase matches in item names
  */
@@ -97,8 +110,8 @@ function calculateRelevance(item: any, keywords: string[], assets?: any[], updat
     score += 100; // Exact phrase match is top priority
   }
   
-  // Count how many keywords match in the item name
-  const keywordsInName = keywords.filter(keyword => itemNameLower.includes(keyword));
+  // Count how many keywords match as WHOLE WORDS in the item name
+  const keywordsInName = keywords.filter(keyword => matchesWholeWord(item.name || '', keyword));
   
   // Multi-keyword matches in name get significant boost
   if (keywordsInName.length >= 2) {
@@ -309,7 +322,7 @@ export const mondaySearchTool = createTool({
               columnValues,
             };
           })
-          .filter((item: any) => item.relevanceScore >= 10) // Filter out weak matches
+          .filter((item: any) => item.relevanceScore >= 5) // Filter out weak matches (need keyword + context)
           .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore);
           
           totalItems += matchingItems.length;
@@ -902,15 +915,13 @@ export const mondaySearchWithDocsTool = createTool({
               createdAt: update.created_at || '',
             })) : [];
             
-            totalFiles += files.length;
-            totalUpdates += itemUpdates.length;
-            
             const relevanceScore = calculateRelevance(item, keywords, assets, updates, columnValues, columnTitleMap, context.searchQuery);
             
             // MINIMUM SCORE THRESHOLD: Filter out weak matches
-            // Items with score < 10 are likely irrelevant (only 1 keyword match)
             // Exact phrase matches get 100+ score, multi-keyword matches get 20+ score
-            const MINIMUM_RELEVANCE_SCORE = 10;
+            // Single keyword + file/update matches get 4-10 points (pass through)
+            // Pure single keyword match gets only 3 points (filtered out)
+            const MINIMUM_RELEVANCE_SCORE = 4;
             
             if (relevanceScore < MINIMUM_RELEVANCE_SCORE) {
               logger?.debug('❌ [monday.com Docs] Item filtered out - relevance too low', {
@@ -920,6 +931,10 @@ export const mondaySearchWithDocsTool = createTool({
               });
               return; // Skip this item - not relevant enough
             }
+            
+            // Only count files and updates from items that pass the relevance threshold
+            totalFiles += files.length;
+            totalUpdates += itemUpdates.length;
             
             allItems.push({
               boardName: board.name,
