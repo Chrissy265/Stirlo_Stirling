@@ -691,44 +691,106 @@ export const mondaySearchWithDocsTool = createTool({
           });
           
           if (nameMatch || fileMatch || updateMatch || docColumnMatch || columnMatch) {
-            const files = context.includeFiles ? assets.map((asset: any) => ({
+            // Extract files from assets array
+            const filesFromAssets = context.includeFiles ? assets.map((asset: any) => ({
               id: asset.id,
               name: asset.name || 'Unnamed file',
               url: asset.url,
               extension: asset.file_extension || '',
             })) : [];
             
-            logger?.info('📎 [monday.com Docs] Files extracted from item', {
-              itemName: item.name,
-              includeFiles: context.includeFiles,
-              assetsArrayLength: assets.length,
-              filesExtracted: files.length,
-              fileSample: files.slice(0, 3).map((f: any) => ({ name: f.name, hasUrl: !!f.url })),
-            });
-            
-            // Check for file columns (separate from assets)
-            const fileColumns = columnValues.filter((col: any) => {
-              const colInfo = columnTitleMap.get(col.id);
-              return colInfo?.type === 'file';
-            });
-            
-            if (fileColumns.length > 0) {
-              logger?.info('📁 [monday.com Docs] Found file columns on item', {
-                itemName: item.name,
-                fileColumnsCount: fileColumns.length,
-                fileColumnsDetail: fileColumns.map((col: any) => {
-                  const colInfo = columnTitleMap.get(col.id);
-                  return {
-                    columnId: col.id,
-                    columnTitle: colInfo?.title || 'unknown',
-                    columnType: colInfo?.type,
-                    hasValue: !!col.value,
-                    hasText: !!col.text,
-                    valuePreview: col.value?.substring(0, 200),
-                  };
-                }),
+            // Extract files from file-type columns
+            const filesFromColumns: any[] = [];
+            if (context.includeFiles) {
+              const fileColumns = columnValues.filter((col: any) => {
+                const colInfo = columnTitleMap.get(col.id);
+                return colInfo?.type === 'file';
+              });
+              
+              if (fileColumns.length > 0) {
+                logger?.debug('📁 [monday.com Docs] Found file columns on item', {
+                  itemName: item.name,
+                  fileColumnsCount: fileColumns.length,
+                  fileColumnsDetail: fileColumns.map((col: any) => {
+                    const colInfo = columnTitleMap.get(col.id);
+                    return {
+                      columnId: col.id,
+                      columnTitle: colInfo?.title || 'unknown',
+                      columnType: colInfo?.type,
+                      hasValue: !!col.value,
+                      hasText: !!col.text,
+                      valuePreview: col.value?.substring(0, 200),
+                    };
+                  }),
+                });
+              }
+              
+              // Parse file column values (they contain JSON with file data)
+              fileColumns.forEach((col: any) => {
+                if (col.value) {
+                  try {
+                    const parsedValue = JSON.parse(col.value);
+                    
+                    logger?.debug('📁 [monday.com Docs] Parsing file column value', {
+                      itemName: item.name,
+                      columnId: col.id,
+                      columnTitle: columnTitleMap.get(col.id)?.title || 'unknown',
+                      parsedStructure: {
+                        hasFiles: !!parsedValue.files,
+                        filesCount: parsedValue.files?.length || 0,
+                      },
+                    });
+                    
+                    if (parsedValue.files && Array.isArray(parsedValue.files)) {
+                      parsedValue.files.forEach((file: any) => {
+                        if (file.assetId && file.name) {
+                          // Construct Monday.com file URL
+                          // Monday.com file URLs follow pattern: https://files.monday.com/asset/{assetId}/{filename}
+                          const fileUrl = file.url || `https://files.monday.com/asset/${file.assetId}/${encodeURIComponent(file.name)}`;
+                          
+                          filesFromColumns.push({
+                            id: file.assetId,
+                            name: file.name,
+                            url: fileUrl,
+                            extension: file.fileType || '',
+                          });
+                        }
+                      });
+                      
+                      logger?.info('📁 [monday.com Docs] Extracted files from file column', {
+                        itemName: item.name,
+                        columnTitle: columnTitleMap.get(col.id)?.title || 'unknown',
+                        filesExtracted: parsedValue.files.length,
+                        fileSample: parsedValue.files.slice(0, 3).map((f: any) => ({ 
+                          name: f.name, 
+                          hasAssetId: !!f.assetId,
+                          hasUrl: !!f.url,
+                        })),
+                      });
+                    }
+                  } catch (parseError) {
+                    logger?.warn('⚠️ [monday.com Docs] Failed to parse file column value', {
+                      itemName: item.name,
+                      columnId: col.id,
+                      error: parseError instanceof Error ? parseError.message : String(parseError),
+                      valuePreview: col.value?.substring(0, 100),
+                    });
+                  }
+                }
               });
             }
+            
+            // Combine files from both assets and file columns
+            const files = [...filesFromAssets, ...filesFromColumns];
+            
+            logger?.info('📎 [monday.com Docs] Total files extracted from item', {
+              itemName: item.name,
+              includeFiles: context.includeFiles,
+              filesFromAssets: filesFromAssets.length,
+              filesFromColumns: filesFromColumns.length,
+              totalFilesExtracted: files.length,
+              fileSample: files.slice(0, 3).map((f: any) => ({ name: f.name, hasUrl: !!f.url })),
+            });
             
             const docColumns = columnValues
               .filter((col: any) => {
