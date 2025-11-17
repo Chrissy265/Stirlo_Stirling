@@ -1364,3 +1364,222 @@ export const mondayListWorkspacesTool = createTool({
     }
   },
 });
+
+export const mondayGetTasksByDateRangeTool = createTool({
+  id: "monday-get-tasks-by-date-range",
+  description: `Get Monday.com tasks filtered by specific date ranges for automated monitoring. Supports 'today', 'end-of-week' (Friday), and 'upcoming-week' ranges. Returns tasks with deadlines, assignees, status, and direct links.`,
+  
+  inputSchema: z.object({
+    dateRange: z.enum(['today', 'end-of-week', 'upcoming-week']).describe("Date range to filter tasks: 'today' for same-day deadlines, 'end-of-week' for tasks due Friday, 'upcoming-week' for next 7 days"),
+  }),
+  
+  outputSchema: z.object({
+    tasks: z.array(z.object({
+      boardName: z.string(),
+      boardId: z.string(),
+      boardUrl: z.string(),
+      workspaceName: z.string(),
+      itemName: z.string(),
+      itemId: z.string(),
+      itemUrl: z.string(),
+      deadline: z.string(),
+      deadlineFormatted: z.string(),
+      assignees: z.array(z.string()),
+      status: z.string(),
+      priority: z.string().optional(),
+    })),
+    totalTasks: z.number(),
+    dateRange: z.string(),
+    queryDate: z.string(),
+  }),
+  
+  execute: async ({ context, mastra }) => {
+    const logger = mastra?.getLogger();
+    logger?.info('📅 [Monday Task Monitor] Fetching tasks by date range', { dateRange: context.dateRange });
+    
+    try {
+      const now = new Date();
+      let startDate: Date;
+      let endDate: Date;
+      let rangeDescription = '';
+      
+      // Calculate date ranges based on context
+      if (context.dateRange === 'today') {
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+        endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+        rangeDescription = 'Today';
+      } else if (context.dateRange === 'end-of-week') {
+        // Find next Friday
+        const dayOfWeek = now.getDay(); // 0 = Sunday, 5 = Friday
+        const daysUntilFriday = dayOfWeek <= 5 ? 5 - dayOfWeek : 7 - dayOfWeek + 5;
+        const friday = new Date(now);
+        friday.setDate(now.getDate() + daysUntilFriday);
+        startDate = new Date(friday.getFullYear(), friday.getMonth(), friday.getDate(), 0, 0, 0);
+        endDate = new Date(friday.getFullYear(), friday.getMonth(), friday.getDate(), 23, 59, 59);
+        rangeDescription = `End of Week (${friday.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })})`;
+      } else { // 'upcoming-week'
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+        endDate = new Date(now);
+        endDate.setDate(endDate.getDate() + 7);
+        endDate.setHours(23, 59, 59);
+        rangeDescription = 'Upcoming Week (7 days)';
+      }
+      
+      logger?.info('📅 [Monday Task Monitor] Date range calculated', { 
+        range: context.dateRange,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        description: rangeDescription
+      });
+      
+      const query = `
+        query {
+          boards (limit: 100) {
+            id
+            name
+            board_kind
+            workspace {
+              id
+              name
+            }
+            columns {
+              id
+              title
+              type
+            }
+            items_page (limit: 500) {
+              items {
+                id
+                name
+                state
+                column_values {
+                  id
+                  text
+                  value
+                  type
+                }
+              }
+            }
+          }
+        }
+      `;
+      
+      logger?.info('📅 [Monday Task Monitor] Querying Monday.com API');
+      
+      const data = await queryMonday(query);
+      
+      if (!data || !data.boards) {
+        logger?.warn('⚠️ [Monday Task Monitor] No boards found');
+        return { 
+          tasks: [], 
+          totalTasks: 0, 
+          dateRange: rangeDescription,
+          queryDate: now.toISOString()
+        };
+      }
+      
+      const tasks: any[] = [];
+      
+      // Process all boards and items
+      data.boards.forEach((board: any) => {
+        const workspace = board.workspace || {};
+        const items = board.items_page?.items || [];
+        const columns = board.columns || [];
+        
+        // Create a map of column IDs to column info
+        const columnMap = new Map<string, ColumnInfo>(
+          columns.map((col: any) => [col.id, { title: col.title, type: col.type }])
+        );
+        
+        items.forEach((item: any) => {
+          // Look for date columns that might be deadlines
+          const dateColumns = item.column_values?.filter((col: any) => {
+            const colInfo = columnMap.get(col.id);
+            return col.type === 'date' && col.value && col.value !== '{}' &&
+                   (colInfo?.title?.toLowerCase().includes('deadline') ||
+                    colInfo?.title?.toLowerCase().includes('due') ||
+                    colInfo?.title?.toLowerCase().includes('date'));
+          });
+          
+          dateColumns?.forEach((dateCol: any) => {
+            try {
+              const dateValue = JSON.parse(dateCol.value);
+              if (dateValue.date) {
+                const deadline = new Date(dateValue.date);
+                
+                // Check if deadline falls within the specified range
+                if (deadline >= startDate && deadline <= endDate) {
+                  // Get assignees if available
+                  const peopleColumns = item.column_values?.filter((col: any) => col.type === 'people');
+                  const assignees = peopleColumns?.flatMap((col: any) => {
+                    try {
+                      const peopleValue = JSON.parse(col.value || '{}');
+                      return peopleValue.personsAndTeams?.map((p: any) => p.name || p.id) || [];
+                    } catch {
+                      return col.text ? [col.text] : [];
+                    }
+                  }) || [];
+                  
+                  // Get priority if available
+                  const priorityColumns = item.column_values?.filter((col: any) => {
+                    const colInfo = columnMap.get(col.id);
+                    return colInfo?.title?.toLowerCase().includes('priority');
+                  });
+                  const priority = priorityColumns?.[0]?.text || 'Not set';
+                  
+                  // Format the deadline nicely
+                  const deadlineFormatted = deadline.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  });
+                  
+                  tasks.push({
+                    boardName: board.name,
+                    boardId: board.id,
+                    boardUrl: `https://stirling-marketing-net.monday.com/boards/${board.id}`,
+                    workspaceName: workspace.name || 'Main Workspace',
+                    itemName: item.name,
+                    itemId: item.id,
+                    itemUrl: `https://stirling-marketing-net.monday.com/boards/${board.id}/pulses/${item.id}`,
+                    deadline: deadline.toISOString(),
+                    deadlineFormatted,
+                    assignees: assignees.filter((a: string) => a && a.trim()),
+                    status: item.state || 'Unknown',
+                    priority,
+                  });
+                }
+              }
+            } catch (e) {
+              // Skip invalid date values
+              logger?.debug('⚠️ [Monday Task Monitor] Skipped invalid date value', { error: e });
+            }
+          });
+        });
+      });
+      
+      // Sort by deadline (soonest first)
+      tasks.sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+      
+      logger?.info('✅ [Monday Task Monitor] Tasks retrieved successfully', { 
+        totalTasks: tasks.length,
+        dateRange: rangeDescription,
+        sampleTasks: tasks.slice(0, 3).map(t => ({ name: t.itemName, deadline: t.deadlineFormatted }))
+      });
+      
+      return {
+        tasks,
+        totalTasks: tasks.length,
+        dateRange: rangeDescription,
+        queryDate: now.toISOString(),
+      };
+    } catch (error: any) {
+      logger?.error('❌ [Monday Task Monitor] Error occurred', { 
+        error: error.message,
+        stack: error.stack 
+      });
+      throw new Error(`Monday.com task monitoring failed: ${error.message}`);
+    }
+  },
+});
