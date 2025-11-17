@@ -9,13 +9,16 @@ import { z } from "zod";
 import { cors } from "hono/cors";
 
 import { sharedPostgresStorage } from "./storage";
-import { inngest, inngestServe } from "./inngest";
+import { inngest, inngestServe, registerCronWorkflow } from "./inngest";
 import { intelligentAssistant } from "./agents/intelligentAssistant";
 import { sharepointSearchTool } from "./tools/sharepointSearchTool";
-import { mondaySearchTool, mondayGetUpcomingDeadlinesTool, mondaySearchWithDocsTool, mondayListWorkspacesTool } from "./tools/mondayTool";
+import { mondaySearchTool, mondayGetUpcomingDeadlinesTool, mondaySearchWithDocsTool, mondayListWorkspacesTool, mondayGetTasksByDateRangeTool } from "./tools/mondayTool";
+import { slackPostMessageTool, slackFormatTaskListTool } from "./tools/slackTool";
 import { ragSearchTool, ragStoreTool } from "./tools/ragTool";
 import { internalSearchOrchestratorTool } from "./tools/internalSearchOrchestratorTool";
 import { slackIntelligentAssistantWorkflow } from "./workflows/slackIntelligentAssistantWorkflow";
+import { dailyTaskMonitoringWorkflow } from "./workflows/dailyTaskMonitoringWorkflow";
+import { weeklyTaskMonitoringWorkflow } from "./workflows/weeklyTaskMonitoringWorkflow";
 import { initializeSocketMode, getSlackTestRoute } from "../triggers/slackTriggers";
 import { getChatRoute, getHistoryRoute, getConversationRoute, getHealthRoute } from "../api/lovableRoutes";
 import { format } from "node:util";
@@ -94,6 +97,9 @@ export const mastra = new Mastra({
         mondayGetUpcomingDeadlinesTool,
         mondaySearchWithDocsTool,
         mondayListWorkspacesTool,
+        mondayGetTasksByDateRangeTool,
+        slackPostMessageTool,
+        slackFormatTaskListTool,
         ragSearchTool,
         ragStoreTool,
       },
@@ -226,6 +232,17 @@ if (Object.keys(mastra.getAgents()).length > 1) {
 }
 
 logger?.info("✅ [Mastra] Configuration validated successfully");
+
+// Register cron-based task monitoring workflows
+// Daily monitoring: 8 AM Australian timezone (AEDT/AEST) every day
+// Weekly monitoring: 8 AM Australian timezone (AEDT/AEST) on Sundays
+logger?.info("📅 [Cron Workflows] Registering automated task monitoring schedules");
+
+registerCronWorkflow("TZ=Australia/Sydney 0 8 * * *", dailyTaskMonitoringWorkflow);
+logger?.info("✅ [Cron Workflows] Daily monitoring registered (8 AM AEDT/AEST, Mon-Sun)");
+
+registerCronWorkflow("TZ=Australia/Sydney 0 8 * * 0", weeklyTaskMonitoringWorkflow);
+logger?.info("✅ [Cron Workflows] Weekly monitoring registered (8 AM AEDT/AEST, Sundays)");
 
 // Initialize Keep-Alive service for Render deployment
 // Only activates when RENDER env var is present (production on Render)
