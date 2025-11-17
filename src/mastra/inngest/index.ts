@@ -81,29 +81,33 @@ export function registerApiRoute<P extends string>(
   return originalRegisterApiRoute(...args);
 }
 
-export function registerCronWorkflow(cronExpression: string, workflow: any, workflowId: string, mastraGetter: () => any) {
+export function registerCronWorkflow(
+  cronExpression: string, 
+  workflow: any, 
+  workflowId: string, 
+  mastraGetter: () => any,
+  triggerType: 'daily-monitoring' | 'weekly-monitoring',
+  slackChannel: string = 'stirlo-assistant'
+) {
   const f = inngest.createFunction(
     { id: `cron-trigger-${workflowId}` },
     [{ event: "replit/cron.trigger" }, { cron: cronExpression }],
     async ({ event, step }) => {
-      // Execute workflow steps directly with Mastra context
-      // This allows cron workflows to run independently of the main Slack workflow
-      // while still having access to Mastra's logger, tools, and storage
       const mastra = mastraGetter();
-      const steps = workflow.steps || [];
-      let result: any = {};
+      const logger = mastra?.getLogger();
       
-      for (const workflowStep of steps) {
-        result = await step.run(workflowStep.id, async () => {
-          return await workflowStep.execute({
-            inputData: result,
-            mastra,
-            runtimeContext: {},
-          });
+      logger?.info(`⏰ [Cron] Triggering ${workflowId} with triggerType: ${triggerType}`);
+      
+      // Call the unified workflow with the correct trigger type
+      return await step.run(`run-${workflowId}`, async () => {
+        const run = await workflow.createRunAsync();
+        return await run.start({
+          inputData: {
+            triggerType,
+            slackChannel,
+          },
         });
-      }
-      
-      return result;
+      });
     },
   );
   inngestFunctions.push(f);

@@ -17,8 +17,6 @@ import { slackPostMessageTool, slackFormatTaskListTool } from "./tools/slackTool
 import { ragSearchTool, ragStoreTool } from "./tools/ragTool";
 import { internalSearchOrchestratorTool } from "./tools/internalSearchOrchestratorTool";
 import { slackIntelligentAssistantWorkflow } from "./workflows/slackIntelligentAssistantWorkflow";
-import { dailyTaskMonitoringWorkflow } from "./workflows/dailyTaskMonitoringWorkflow";
-import { weeklyTaskMonitoringWorkflow } from "./workflows/weeklyTaskMonitoringWorkflow";
 import { initializeSocketMode, getSlackTestRoute } from "../triggers/slackTriggers";
 import { getChatRoute, getHistoryRoute, getConversationRoute, getHealthRoute } from "../api/lovableRoutes";
 import { format } from "node:util";
@@ -240,17 +238,21 @@ logger?.info("📅 [Cron Workflows] Registering automated task monitoring schedu
 
 registerCronWorkflow(
   "TZ=Australia/Sydney 0 8 * * *", 
-  dailyTaskMonitoringWorkflow,
+  slackIntelligentAssistantWorkflow,
   "daily-task-monitoring",
-  () => mastra
+  () => mastra,
+  'daily-monitoring',
+  'stirlo-assistant'
 );
 logger?.info("✅ [Cron Workflows] Daily monitoring registered (8 AM AEDT/AEST, Mon-Sun)");
 
 registerCronWorkflow(
   "TZ=Australia/Sydney 0 8 * * 0", 
-  weeklyTaskMonitoringWorkflow,
+  slackIntelligentAssistantWorkflow,
   "weekly-task-monitoring",
-  () => mastra
+  () => mastra,
+  'weekly-monitoring',
+  'stirlo-assistant'
 );
 logger?.info("✅ [Cron Workflows] Weekly monitoring registered (8 AM AEDT/AEST, Sundays)");
 
@@ -316,6 +318,7 @@ initializeSocketMode({
       
       const result = await run.start({
         inputData: {
+          triggerType: 'slack',
           message: payload.event.text,
           threadId: `slack/${payload.event.thread_ts || payload.event.ts}`,
           channel: payload.event.channel,

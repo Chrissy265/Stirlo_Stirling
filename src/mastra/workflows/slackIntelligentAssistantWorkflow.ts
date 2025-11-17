@@ -2,46 +2,33 @@ import { createStep, createWorkflow } from "../inngest";
 import { z } from "zod";
 import { intelligentAssistant } from "../agents/intelligentAssistant";
 import { getClient } from "../../triggers/slackTriggers";
+import { mondayGetTasksByDateRangeTool } from "../tools/mondayTool";
+import { slackPostMessageTool, slackFormatTaskListTool } from "../tools/slackTool";
 
 function convertMarkdownToSlackFormat(text: string): string {
   return text
     // Convert Markdown links [text](url) to Slack format <url|text>
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<$2|$1>')
-    // Remove bold formatting ** **
+    // Remove bold/italic markers
     .replace(/\*\*([^*]+)\*\*/g, '$1')
-    // Remove italic formatting * *
-    .replace(/\*([^*]+)\*/g, '$1')
-    // Remove italic formatting _ _
-    .replace(/_([^_]+)_/g, '$1')
-    // Remove code formatting ` `
-    .replace(/`([^`]+)`/g, '$1')
-    // Remove strikethrough ~~ ~~
-    .replace(/~~([^~]+)~~/g, '$1')
-    // Remove heading markers #
-    .replace(/^#+\s+/gm, '')
-    // Convert Markdown bullets to simple bullets
-    .replace(/^[-*+]\s+/gm, '• ')
-    // Preserve numbered lists
-    .replace(/^\d+\.\s+/gm, (match, offset, string) => {
-      const lineStart = string.lastIndexOf('\n', offset) + 1;
-      const num = string.substring(lineStart, offset).match(/\d+/)?.[0] || '1';
-      return `${num}. `;
-    });
+    .replace(/\*([^*]+)\*/g, '$1');
 }
 
-function splitTextIntoChunks(text: string, maxChunkSize: number = 2900): string[] {
+function splitTextIntoChunks(text: string, maxChunkSize: number = 3000): string[] {
   if (text.length <= maxChunkSize) {
     return [text];
   }
 
-  const chunks: string[] = [];
   const lines = text.split('\n');
+  const chunks: string[] = [];
   let currentChunk = '';
 
   for (const line of lines) {
     const potentialChunk = currentChunk ? `${currentChunk}\n${line}` : line;
 
-    if (potentialChunk.length > maxChunkSize) {
+    if (potentialChunk.length <= maxChunkSize) {
+      currentChunk = potentialChunk;
+    } else {
       if (currentChunk) {
         chunks.push(currentChunk);
         currentChunk = '';
@@ -59,8 +46,6 @@ function splitTextIntoChunks(text: string, maxChunkSize: number = 2900): string[
       } else {
         currentChunk = line;
       }
-    } else {
-      currentChunk = potentialChunk;
     }
   }
 
@@ -71,189 +56,306 @@ function splitTextIntoChunks(text: string, maxChunkSize: number = 2900): string[
   return chunks.filter(chunk => chunk.length <= maxChunkSize);
 }
 
-const inputSchemaForWorkflow = z.object({
+// Unified envelope schema for workflow
+const workflowEnvelopeSchema = z.object({
+  triggerType: z.enum(['slack', 'daily-monitoring', 'weekly-monitoring']),
+  slackChannel: z.string().default('stirlo-assistant'),
+  success: z.boolean().optional(),
+  posted: z.boolean().optional(),
+  taskCount: z.number().optional(),
+});
+
+// Input schemas
+const slackInputSchema = z.object({
+  triggerType: z.literal('slack'),
   message: z.string(),
   threadId: z.string(),
   channel: z.string(),
   messageTs: z.string(),
 });
 
-const useAgentStep = createStep({
-  id: "use-intelligent-assistant",
-  description: "Call the intelligent assistant agent with the user's message",
-  
+const monitoringInputSchema = z.object({
+  triggerType: z.enum(['daily-monitoring', 'weekly-monitoring']),
+  slackChannel: z.string().default('stirlo-assistant'),
+});
+
+const inputSchemaForWorkflow = z.discriminatedUnion('triggerType', [
+  slackInputSchema,
+  monitoringInputSchema,
+]);
+
+// Normalize envelope step - ensures shared invariants
+const normalizeEnvelopeStep = createStep({
+  id: "normalize-envelope",
+  description: "Normalize and validate workflow envelope",
   inputSchema: inputSchemaForWorkflow,
-  
   outputSchema: z.object({
-    response: z.string(),
-    channel: z.string(),
-    messageTs: z.string(),
+    triggerType: z.enum(['slack', 'daily-monitoring', 'weekly-monitoring']),
+    slackChannel: z.string(),
+    slackPayload: z.object({
+      message: z.string(),
+      threadId: z.string(),
+      channel: z.string(),
+      messageTs: z.string(),
+    }).optional(),
   }),
-  
   execute: async ({ inputData, mastra }) => {
     const logger = mastra?.getLogger();
-    const { message, threadId, channel, messageTs } = inputData;
+    logger?.info('🔄 [Normalize] Normalizing envelope', { triggerType: inputData.triggerType });
     
-    try {
-      logger?.info('🤖 [Slack Workflow] Step 1: Starting agent generation', {
-        threadId,
-        channel,
-        messageTs,
-        messageLength: message.length,
-        messagePreview: message.substring(0, 100),
-      });
-      
-      const { text } = await intelligentAssistant.generate(
-        [{ role: "user", content: message }],
-        {
-          resourceId: "slack-bot",
-          threadId,
-          maxSteps: 5,
-        }
-      );
-      
-      logger?.info('✅ [Slack Workflow] Step 1: Agent generation completed', {
-        responseLength: text.length,
-        responsePreview: text.substring(0, 200),
-      });
-      
+    if (inputData.triggerType === 'slack') {
       return {
-        response: text,
-        channel,
-        messageTs,
+        triggerType: 'slack',
+        slackChannel: inputData.channel, // Preserve actual conversation channel
+        slackPayload: {
+          message: inputData.message,
+          threadId: inputData.threadId,
+          channel: inputData.channel,
+          messageTs: inputData.messageTs,
+        },
       };
-    } catch (error) {
-      logger?.error('❌ [Slack Workflow] Step 1: Agent generation FAILED', {
-        error: error instanceof Error ? error.message : String(error),
-        errorStack: error instanceof Error ? error.stack : undefined,
-        errorType: error?.constructor?.name,
-        threadId,
-        channel,
-        messageTs,
-      });
-      throw error;
     }
+    
+    return {
+      triggerType: inputData.triggerType,
+      slackChannel: inputData.slackChannel || 'stirlo-assistant',
+    };
   },
 });
 
-const sendReplyStep = createStep({
-  id: "send-slack-reply",
-  description: "Send the assistant's response back to Slack with clean, natural formatting",
-  
+// Router step - handles all three branches internally
+const routerStep = createStep({
+  id: "route-and-execute",
+  description: "Route to appropriate handler based on trigger type",
   inputSchema: z.object({
-    response: z.string(),
-    channel: z.string(),
-    messageTs: z.string(),
+    triggerType: z.enum(['slack', 'daily-monitoring', 'weekly-monitoring']),
+    slackChannel: z.string(),
+    slackPayload: z.object({
+      message: z.string(),
+      threadId: z.string(),
+      channel: z.string(),
+      messageTs: z.string(),
+    }).optional(),
   }),
-  
-  outputSchema: z.object({
-    success: z.boolean(),
-  }),
-  
-  execute: async ({ inputData, mastra }) => {
+  outputSchema: workflowEnvelopeSchema,
+  execute: async ({ inputData, mastra, runtimeContext }) => {
     const logger = mastra?.getLogger();
-    const { response, channel, messageTs } = inputData;
+    logger?.info('🔀 [Router] Routing to handler', { triggerType: inputData.triggerType });
     
-    try {
-      logger?.info('💬 [Slack Workflow] Step 2: Starting Slack reply process', {
-        channel,
-        messageTs,
-        responseLength: response.length,
-        responsePreview: response.substring(0, 200),
-      });
-      
-      logger?.info('🔌 [Slack Workflow] Step 2: Getting Slack client');
-      const { slack } = await getClient();
-      logger?.info('✅ [Slack Workflow] Step 2: Slack client obtained');
-      
-      const cleanResponse = convertMarkdownToSlackFormat(response);
-      
-      logger?.info('📝 [Slack Workflow] Step 2: Response cleaned for natural formatting', {
-        originalLength: response.length,
-        cleanedLength: cleanResponse.length,
-        cleanedPreview: cleanResponse.substring(0, 200),
-      });
+    // SLACK BRANCH
+    if (inputData.triggerType === 'slack' && inputData.slackPayload) {
+      const { message, threadId, channel, messageTs } = inputData.slackPayload;
       
       try {
-        logger?.info('⏳ [Slack Workflow] Step 2: Removing hourglass reaction');
-        await slack.reactions.remove({
-          channel,
-          timestamp: messageTs,
-          name: "hourglass_flowing_sand",
+        logger?.info('🤖 [Slack] Starting agent generation');
+        
+        const { text } = await intelligentAssistant.generate(
+          [{ role: "user", content: message }],
+          {
+            resourceId: "slack-bot",
+            threadId,
+            maxSteps: 5,
+          }
+        );
+        
+        logger?.info('✅ [Slack] Agent generation completed', {
+          responseLength: text.length,
         });
-        logger?.info('✅ [Slack Workflow] Step 2: Hourglass reaction removed');
+        
+        // Send reply to Slack
+        const { slack } = await getClient();
+        const cleanResponse = convertMarkdownToSlackFormat(text);
+        
+        try {
+          await slack.reactions.remove({
+            channel,
+            timestamp: messageTs,
+            name: "hourglass_flowing_sand",
+          });
+        } catch (error) {
+          logger?.warn('⚠️ [Slack] Could not remove hourglass reaction');
+        }
+        
+        const chunks = splitTextIntoChunks(cleanResponse, 2900);
+        const blocks = chunks.map(chunk => ({
+          type: "section" as const,
+          text: { type: "mrkdwn" as const, text: chunk },
+        }));
+        
+        await slack.chat.postMessage({
+          channel,
+          thread_ts: messageTs,
+          blocks,
+          text: cleanResponse.substring(0, 3000),
+        });
+        
+        logger?.info('✅ [Slack] Reply posted successfully');
+        
+        return {
+          triggerType: 'slack',
+          slackChannel: inputData.slackChannel,
+          success: true,
+        };
       } catch (error) {
-        logger?.warn('⚠️  [Slack Workflow] Step 2: Could not remove hourglass reaction', { 
+        logger?.error('❌ [Slack] Handler failed', {
           error: error instanceof Error ? error.message : String(error),
         });
+        throw error;
+      }
+    }
+    
+    // DAILY MONITORING BRANCH
+    if (inputData.triggerType === 'daily-monitoring') {
+      logger?.info('📅 [Daily Monitoring] Starting daily task monitoring');
+      
+      let messagesPosted = 0;
+      
+      // Fetch and post today's tasks
+      const todayResult = await mondayGetTasksByDateRangeTool.execute({
+        context: { dateRange: 'today' },
+        mastra,
+        runtimeContext,
+      });
+      
+      if (todayResult.totalTasks > 0) {
+        const todayFormatted = await slackFormatTaskListTool.execute({
+          context: {
+            tasks: todayResult.tasks,
+            title: '🚨 Tasks Due Today',
+            dateRange: todayResult.dateRange,
+          },
+          mastra,
+          runtimeContext,
+        });
+        
+        await slackPostMessageTool.execute({
+          context: {
+            channel: inputData.slackChannel,
+            text: todayFormatted.formattedText,
+            blocks: todayFormatted.blocks,
+          },
+          mastra,
+          runtimeContext,
+        });
+        
+        messagesPosted++;
+        logger?.info('✅ [Daily Monitoring] Today tasks posted', { count: todayResult.totalTasks });
+      } else {
+        logger?.info('ℹ️ [Daily Monitoring] No tasks due today');
       }
       
-      const hyperlinkMatches = cleanResponse.match(/<https:\/\/[^>]+>/g) || [];
-      const chunks = splitTextIntoChunks(cleanResponse, 2900);
-      
-      logger?.info('📤 [Slack Workflow] Step 2: Preparing message for Slack', {
-        channel,
-        threadTs: messageTs,
-        messageLength: cleanResponse.length,
-        chunkCount: chunks.length,
-        firstHyperlinkSample: hyperlinkMatches[0] || 'No hyperlinks found',
-        hyperlinkCount: hyperlinkMatches.length,
-        chunkLengths: chunks.map(c => c.length),
-        firstChunkSample: chunks[0]?.substring(0, 300),
+      // Fetch and post end-of-week tasks
+      const eowResult = await mondayGetTasksByDateRangeTool.execute({
+        context: { dateRange: 'end-of-week' },
+        mastra,
+        runtimeContext,
       });
       
-      const blocks = chunks.map(chunk => ({
-        type: "section" as const,
-        text: {
-          type: "mrkdwn" as const,
-          text: chunk,
-        },
-      }));
+      if (eowResult.totalTasks > 0) {
+        const eowFormatted = await slackFormatTaskListTool.execute({
+          context: {
+            tasks: eowResult.tasks,
+            title: '📌 Tasks Due End of Week',
+            dateRange: eowResult.dateRange,
+          },
+          mastra,
+          runtimeContext,
+        });
+        
+        await slackPostMessageTool.execute({
+          context: {
+            channel: inputData.slackChannel,
+            text: eowFormatted.formattedText,
+            blocks: eowFormatted.blocks,
+          },
+          mastra,
+          runtimeContext,
+        });
+        
+        messagesPosted++;
+        logger?.info('✅ [Daily Monitoring] EOW tasks posted', { count: eowResult.totalTasks });
+      } else {
+        logger?.info('ℹ️ [Daily Monitoring] No tasks due end of week');
+      }
       
-      logger?.info('📤 [Slack Workflow] Step 2: Posting message to Slack', {
-        channel,
-        threadTs: messageTs,
-        blockCount: blocks.length,
-        totalBlocks: blocks.length,
-      });
-      
-      const result = await slack.chat.postMessage({
-        channel,
-        thread_ts: messageTs,
-        blocks,
-        text: cleanResponse.substring(0, 3000),
-      });
-      
-      logger?.info('✅ [Slack Workflow] Step 2: Message posted successfully', {
-        messageTs: result.ts,
-        ok: result.ok,
-        blocksPosted: blocks.length,
-      });
-      
-      return { success: true };
-    } catch (error) {
-      logger?.error('❌ [Slack Workflow] Step 2: Slack reply FAILED', {
-        error: error instanceof Error ? error.message : String(error),
-        errorStack: error instanceof Error ? error.stack : undefined,
-        errorType: error?.constructor?.name,
-        channel,
-        messageTs,
-      });
-      throw error;
+      return {
+        triggerType: 'daily-monitoring',
+        slackChannel: inputData.slackChannel,
+        success: true,
+        posted: messagesPosted > 0, // Only true if we actually posted messages
+        taskCount: todayResult.totalTasks + eowResult.totalTasks,
+      };
     }
+    
+    // WEEKLY MONITORING BRANCH
+    if (inputData.triggerType === 'weekly-monitoring') {
+      logger?.info('📅 [Weekly Monitoring] Starting weekly task overview');
+      
+      const weeklyResult = await mondayGetTasksByDateRangeTool.execute({
+        context: { dateRange: 'upcoming-week' },
+        mastra,
+        runtimeContext,
+      });
+      
+      if (weeklyResult.totalTasks === 0) {
+        const emptyMessage = `✅ *📅 Weekly Task Overview*\n\n_Upcoming Week (Next 7 Days)_\n\nGreat news! No tasks with deadlines in the upcoming week. Enjoy the calm before the storm! 🌴`;
+        
+        await slackPostMessageTool.execute({
+          context: {
+            channel: inputData.slackChannel,
+            text: emptyMessage,
+          },
+          mastra,
+          runtimeContext,
+        });
+        
+        logger?.info('ℹ️ [Weekly Monitoring] No upcoming tasks');
+      } else {
+        const weeklyFormatted = await slackFormatTaskListTool.execute({
+          context: {
+            tasks: weeklyResult.tasks,
+            title: '📅 Weekly Task Overview',
+            dateRange: weeklyResult.dateRange,
+          },
+          mastra,
+          runtimeContext,
+        });
+        
+        await slackPostMessageTool.execute({
+          context: {
+            channel: inputData.slackChannel,
+            text: weeklyFormatted.formattedText,
+            blocks: weeklyFormatted.blocks,
+          },
+          mastra,
+          runtimeContext,
+        });
+        
+        logger?.info('✅ [Weekly Monitoring] Weekly overview posted', { count: weeklyResult.totalTasks });
+      }
+      
+      return {
+        triggerType: 'weekly-monitoring',
+        slackChannel: inputData.slackChannel,
+        success: true,
+        posted: true,
+        taskCount: weeklyResult.totalTasks,
+      };
+    }
+    
+    // Fallback (should never reach here)
+    logger?.error('❌ [Router] Unknown trigger type');
+    throw new Error(`Unknown trigger type: ${inputData.triggerType}`);
   },
 });
 
 export const slackIntelligentAssistantWorkflow = createWorkflow({
   id: "slack-intelligent-assistant",
-  description: "Slack workflow that uses the intelligent assistant to respond to messages",
+  description: "Unified orchestrator for Slack messages and automated task monitoring",
   
   inputSchema: inputSchemaForWorkflow,
-  
-  outputSchema: z.object({
-    success: z.boolean(),
-  }),
+  outputSchema: workflowEnvelopeSchema,
 })
-  .then(useAgentStep)
-  .then(sendReplyStep)
+  .then(normalizeEnvelopeStep)
+  .then(routerStep)
   .commit();
