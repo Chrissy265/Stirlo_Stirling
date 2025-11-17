@@ -99,12 +99,55 @@ async function fetchFolders(workspaceIds?: number[]): Promise<any> {
             id
             name
           }
+          children {
+            id
+            name
+          }
         }
       }
     `;
   }
   
   return await queryMonday(query);
+}
+
+/**
+ * Fetch documents (workdocs) from a specific folder
+ * Note: Monday.com API doesn't support filtering by folder_ids directly,
+ * so we query all docs and filter by doc_folder_id
+ */
+async function fetchDocsFromFolder(folderId: string, workspaceId?: string): Promise<any> {
+  // Query docs from the workspace if provided, otherwise query all
+  // Note: Monday.com API doesn't support folder_ids filter, so we query all docs and filter client-side
+  
+  // Only add workspace filter if we have a valid workspace ID
+  const hasValidWorkspaceId = workspaceId && workspaceId !== 'undefined' && workspaceId !== 'null';
+  const workspaceFilter = hasValidWorkspaceId ? `workspace_ids: [${workspaceId}], ` : '';
+  
+  const query = `
+    query {
+      docs(${workspaceFilter}limit: 100) {
+        id
+        name
+        url
+        created_at
+        updated_at
+        doc_kind
+        doc_folder_id
+        workspace_id
+      }
+    }
+  `;
+  
+  const result = await queryMonday(query);
+  
+  // Filter docs to only include those in the specified folder
+  if (result && result.docs && Array.isArray(result.docs)) {
+    const filteredDocs = result.docs.filter((doc: any) => doc.doc_folder_id === folderId);
+    return { docs: filteredDocs };
+  }
+  
+  return { docs: [] };
 }
 
 /**
@@ -1049,8 +1092,8 @@ export const mondaySearchWithDocsTool = createTool({
           folderNames: folders.slice(0, 10).map((f: any) => f.name),
         });
         
-        // Apply keyword matching to folders
-        folders.forEach((folder: any) => {
+        // Apply keyword matching to folders (use for...of to support async/await)
+        for (const folder of folders) {
           const folderName = folder.name || '';
           const folderNameLower = folderName.toLowerCase();
           
@@ -1093,40 +1136,132 @@ export const mondaySearchWithDocsTool = createTool({
             const MINIMUM_RELEVANCE_SCORE = 4;
             
             if (score >= MINIMUM_RELEVANCE_SCORE) {
-              logger?.info('📁 [monday.com Folders] Folder matched', {
+              logger?.info('📁 [monday.com Folders] Folder matched - fetching documents inside', {
                 folderName,
                 folderId: folder.id,
                 relevanceScore: score,
               });
               
-              // Generate folder URL: https://stirling-marketing-net.monday.com/docs/{folder_id}
-              const folderUrl = `https://stirling-marketing-net.monday.com/docs/${folder.id}`;
-              
-              allItems.push({
-                type: 'folder',
-                folderId: folder.id?.toString() || '',
-                folderName: folder.name,
-                folderUrl,
-                relevanceScore: score,
-                boardName: 'Folder',
-                boardId: '',
-                workspaceName: folder.workspace?.name || '',
-                workspaceId: folder.workspace?.id?.toString() || '',
-                itemId: folder.id?.toString() || '',
-                itemName: folder.name,
-                state: '',
-                taskInfo: {
-                  columnValues: [],
-                },
-                documentation: {
-                  files: [],
-                  docColumns: [],
-                  updates: [],
-                },
-              });
+              // Fetch actual documents from this folder
+              try {
+                const docsData = await fetchDocsFromFolder(folder.id, folder.workspace?.id?.toString());
+                const docs = docsData?.docs || [];
+                
+                logger?.info('📄 [monday.com Folders] Retrieved documents from folder', {
+                  folderName,
+                  folderId: folder.id,
+                  docsCount: docs.length,
+                  docNames: docs.slice(0, 5).map((d: any) => d.name),
+                });
+                
+                // Add each document as a separate result with its direct URL
+                docs.forEach((doc: any) => {
+                  // Calculate document score (inherit folder score + boost for exact doc name match)
+                  let docScore = score; // Inherit folder's relevance
+                  
+                  const docNameLower = doc.name?.toLowerCase() || '';
+                  if (docNameLower.includes(context.searchQuery.toLowerCase())) {
+                    docScore += 50; // Boost if doc name matches search query
+                  }
+                  
+                  allItems.push({
+                    type: 'document',
+                    documentId: doc.id?.toString() || '',
+                    documentName: doc.name,
+                    documentUrl: doc.url,
+                    documentKind: doc.doc_kind,
+                    parentFolderName: folder.name,
+                    parentFolderId: folder.id?.toString() || '',
+                    createdAt: doc.created_at,
+                    updatedAt: doc.updated_at,
+                    relevanceScore: docScore,
+                    boardName: `Document in ${folder.name}`,
+                    boardId: '',
+                    workspaceName: folder.workspace?.name || '',
+                    workspaceId: doc.workspace_id?.toString() || folder.workspace?.id?.toString() || '',
+                    itemId: doc.id?.toString() || '',
+                    itemName: doc.name,
+                    state: '',
+                    taskInfo: {
+                      columnValues: [{
+                        title: 'Folder',
+                        text: folder.name,
+                        value: folder.id?.toString() || '',
+                      }],
+                    },
+                    documentation: {
+                      files: [],
+                      docColumns: [],
+                      updates: [],
+                    },
+                  });
+                });
+                
+                // If no docs found in the folder, add a placeholder noting the folder exists
+                if (docs.length === 0) {
+                  logger?.info('📁 [monday.com Folders] No documents found in folder, adding folder reference', {
+                    folderName,
+                    folderId: folder.id,
+                  });
+                  
+                  allItems.push({
+                    type: 'folder',
+                    folderId: folder.id?.toString() || '',
+                    folderName: folder.name,
+                    folderUrl: `https://stirling-marketing-net.monday.com/docs/${folder.id}`,
+                    relevanceScore: score,
+                    boardName: 'Folder (empty)',
+                    boardId: '',
+                    workspaceName: folder.workspace?.name || '',
+                    workspaceId: folder.workspace?.id?.toString() || '',
+                    itemId: folder.id?.toString() || '',
+                    itemName: folder.name,
+                    state: '',
+                    taskInfo: {
+                      columnValues: [],
+                    },
+                    documentation: {
+                      files: [],
+                      docColumns: [],
+                      updates: [],
+                    },
+                  });
+                }
+              } catch (docError: any) {
+                logger?.warn('⚠️ [monday.com Folders] Failed to fetch documents from folder', {
+                  folderName,
+                  folderId: folder.id,
+                  error: docError.message,
+                });
+                
+                // Fallback to folder URL if doc fetch fails
+                const folderUrl = `https://stirling-marketing-net.monday.com/docs/${folder.id}`;
+                allItems.push({
+                  type: 'folder',
+                  folderId: folder.id?.toString() || '',
+                  folderName: folder.name,
+                  folderUrl,
+                  relevanceScore: score,
+                  boardName: 'Folder',
+                  boardId: '',
+                  workspaceName: folder.workspace?.name || '',
+                  workspaceId: folder.workspace?.id?.toString() || '',
+                  itemId: folder.id?.toString() || '',
+                  itemName: folder.name,
+                  state: '',
+                  taskInfo: {
+                    columnValues: [],
+                  },
+                  documentation: {
+                    files: [],
+                    docColumns: [],
+                    updates: [],
+                  },
+                });
+              }
             }
           }
-        });
+        }
       } catch (folderError: any) {
         logger?.warn('⚠️ [monday.com Folders] Failed to fetch folders', {
           error: folderError.message,
