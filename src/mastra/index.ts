@@ -238,10 +238,20 @@ logger?.info("✅ [Mastra] Configuration validated successfully");
 // Weekly monitoring: 8 AM Australian timezone (AEDT/AEST) on Sundays
 logger?.info("📅 [Cron Workflows] Registering automated task monitoring schedules");
 
-registerCronWorkflow("TZ=Australia/Sydney 0 8 * * *", dailyTaskMonitoringWorkflow);
+registerCronWorkflow(
+  "TZ=Australia/Sydney 0 8 * * *", 
+  dailyTaskMonitoringWorkflow,
+  "daily-task-monitoring",
+  () => mastra
+);
 logger?.info("✅ [Cron Workflows] Daily monitoring registered (8 AM AEDT/AEST, Mon-Sun)");
 
-registerCronWorkflow("TZ=Australia/Sydney 0 8 * * 0", weeklyTaskMonitoringWorkflow);
+registerCronWorkflow(
+  "TZ=Australia/Sydney 0 8 * * 0", 
+  weeklyTaskMonitoringWorkflow,
+  "weekly-task-monitoring",
+  () => mastra
+);
 logger?.info("✅ [Cron Workflows] Weekly monitoring registered (8 AM AEDT/AEST, Sundays)");
 
 // Initialize Keep-Alive service for Render deployment

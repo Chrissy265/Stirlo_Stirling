@@ -1545,7 +1545,7 @@ export const mondayGetTasksByDateRangeTool = createTool({
                     itemUrl: `https://stirling-marketing-net.monday.com/boards/${board.id}/pulses/${item.id}`,
                     deadline: deadline.toISOString(),
                     deadlineFormatted,
-                    assignees: assignees.filter((a: string) => a && a.trim()),
+                    assignees: assignees.filter((a: any) => a && typeof a === 'string' && a.trim()),
                     status: item.state || 'Unknown',
                     priority,
                   });

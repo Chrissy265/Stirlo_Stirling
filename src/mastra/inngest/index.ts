@@ -81,13 +81,28 @@ export function registerApiRoute<P extends string>(
   return originalRegisterApiRoute(...args);
 }
 
-export function registerCronWorkflow(cronExpression: string, workflow: any) {
+export function registerCronWorkflow(cronExpression: string, workflow: any, workflowId: string, mastraGetter: () => any) {
   const f = inngest.createFunction(
-    { id: "cron-trigger" },
+    { id: `cron-trigger-${workflowId}` },
     [{ event: "replit/cron.trigger" }, { cron: cronExpression }],
     async ({ event, step }) => {
-      const run = await workflow.createRunAsync();
-      const result = await run.start({ inputData: {} });
+      // Execute workflow steps directly with Mastra context
+      // This allows cron workflows to run independently of the main Slack workflow
+      // while still having access to Mastra's logger, tools, and storage
+      const mastra = mastraGetter();
+      const steps = workflow.steps || [];
+      let result: any = {};
+      
+      for (const workflowStep of steps) {
+        result = await step.run(workflowStep.id, async () => {
+          return await workflowStep.execute({
+            inputData: result,
+            mastra,
+            runtimeContext: {},
+          });
+        });
+      }
+      
       return result;
     },
   );
