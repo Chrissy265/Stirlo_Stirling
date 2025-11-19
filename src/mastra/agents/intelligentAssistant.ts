@@ -3,7 +3,8 @@ import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 import { sharedPostgresStorage } from "../storage";
 import { sharepointSearchTool } from "../tools/sharepointSearchTool";
-import { mondaySearchTool, mondayGetUpcomingDeadlinesTool, mondaySearchWithDocsTool, mondayListWorkspacesTool } from "../tools/mondayTool";
+import { mondaySearchTool, mondayGetUpcomingDeadlinesTool, mondaySearchWithDocsTool, mondayListWorkspacesTool, mondayGetTasksByDateRangeTool } from "../tools/mondayTool";
+import { slackFormatTaskListTool } from "../tools/slackTool";
 import { ragSearchTool, ragStoreTool } from "../tools/ragTool";
 import { internalSearchOrchestratorTool } from "../tools/internalSearchOrchestratorTool";
 
@@ -50,7 +51,9 @@ The Internal Search Orchestrator automatically:
    - Use this tool for 95% of user queries
 
 2. **Specialized Tools (Use only when orchestrator isn't appropriate):**
-   - **mondayGetUpcomingDeadlinesTool**: For deadline-specific queries (e.g., "what's due this week?")
+   - **mondayGetTasksByDateRangeTool**: For date-range task queries (today, end-of-week, upcoming-week)
+   - **slackFormatTaskListTool**: Format task lists into readable Slack messages
+   - **mondayGetUpcomingDeadlinesTool**: For general upcoming deadline queries
    - **mondayListWorkspacesTool**: When user asks "what workspaces exist?"
    - **ragSearchTool**: Search past conversation history (e.g., "what did we discuss last week?")
    - **ragStoreTool**: Automatically store important conversation context
@@ -91,10 +94,13 @@ The Internal Search Orchestrator automatically:
 ## Tool Priority Order
 
 1. **FOR DOCUMENTS/TASKS/FILES**: Use internalSearchOrchestratorTool (searches Monday → SharePoint automatically)
-2. **FOR DEADLINES ONLY**: Use mondayGetUpcomingDeadlinesTool
-3. **FOR WORKSPACE DISCOVERY**: Use mondayListWorkspacesTool
-4. **FOR PAST CONVERSATIONS**: Use ragSearchTool
-5. **TO SAVE CONTEXT**: Use ragStoreTool
+2. **FOR TASK MONITORING BY DATE**: Use mondayGetTasksByDateRangeTool then slackFormatTaskListTool
+   - Supports: "today", "end-of-week", "upcoming-week"
+   - Example: User asks "show me tasks due today" → call mondayGetTasksByDateRangeTool with dateRange: "today", then format with slackFormatTaskListTool
+3. **FOR DEADLINES ONLY**: Use mondayGetUpcomingDeadlinesTool
+4. **FOR WORKSPACE DISCOVERY**: Use mondayListWorkspacesTool
+5. **FOR PAST CONVERSATIONS**: Use ragSearchTool
+6. **TO SAVE CONTEXT**: Use ragStoreTool
 
 ## Source Attribution (REQUIRED)
 
@@ -123,6 +129,8 @@ Remember: Your goal is to make the team more efficient by providing instant, acc
   
   tools: {
     internalSearchOrchestratorTool,
+    mondayGetTasksByDateRangeTool,
+    slackFormatTaskListTool,
     mondayGetUpcomingDeadlinesTool,
     mondayListWorkspacesTool,
     ragSearchTool,
