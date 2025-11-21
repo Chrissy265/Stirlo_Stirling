@@ -1,0 +1,31 @@
+{"level":"warn","time":"2025-11-21T13:22:04.211Z","name":"Mastra","msg":"⚠️ [Slack] Could not remove hourglass reaction"}
+[WARN]  web-api:WebClient:3 The top-level `text` argument is missing in the request payload for a chat.postMessage call - It's a best practice to always provide a `text` argument when posting a message. The `text` is used in places where the content cannot be rendered such as: system push notifications, assistive technology such as screen readers, etc.
+[ERROR]  web-api:WebClient:3 failed to match all allowed schemas [json-pointer:/blocks/0/text]
+{"level":"error","time":"2025-11-21T13:22:04.258Z","name":"Mastra","error":"An API error occurred: invalid_blocks","msg":"❌ [Slack] Handler failed"}
+[ERROR]  web-api:WebClient:3 must be more than 0 characters [json-pointer:/blocks/0/text/text]
+RetryAfterError: An API error occurred: invalid_blocks
+    at file:///opt/render/project/src/.mastra/output/node_modules/@mastra/inngest/dist/index.js:1219:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async V1InngestExecution.tryExecuteStep (/opt/render/project/src/.mastra/output/node_modules/inngest/components/execution/v1.js:221:20)
+    at async steps-found (/opt/render/project/src/.mastra/output/node_modules/inngest/components/execution/v1.js:164:36)
+    at async V1InngestExecution._start (/opt/render/project/src/.mastra/output/node_modules/inngest/components/execution/v1.js:107:36)
+    at async InngestCommHandler.handleAction (/opt/render/project/src/.mastra/output/node_modules/inngest/components/InngestCommHandler.js:650:36)
+    at async ServerTiming.wrap (/opt/render/project/src/.mastra/output/node_modules/inngest/helpers/ServerTiming.js:64:21)
+    at async ServerTiming.wrap (/opt/render/project/src/.mastra/output/node_modules/inngest/helpers/ServerTiming.js:64:21)
+    at async dispatch (file:///opt/render/project/src/.mastra/output/node_modules/hono/dist/compose.js:22:17)
+    at async Mastra.server.middleware (file:///opt/render/project/src/.mastra/output/mastra.mjs:134301:11) {
+  retryAfter: '0',
+  cause: {
+    status: 'failed',
+    payload: {
+      slackChannel: 'C09PHGX6YDU',
+      slackPayload: [Object],
+      triggerType: 'slack'
+    },
+    error: 'An API error occurred: invalid_blocks',
+    endedAt: 1763731324258,
+    startedAt: 1763731268456,
+    resumedAt: undefined,
+    resumePayload: undefined
+  }
+}
