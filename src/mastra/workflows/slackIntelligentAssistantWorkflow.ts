@@ -147,25 +147,36 @@ const routerStep = createStep({
       const { message, threadId, channel, messageTs } = inputData.slackPayload;
       
       try {
-        logger?.info('🤖 [Slack] Starting agent generation (using stream)');
+        logger?.info('🤖 [Slack] Calling agent via internal API (workaround for workflow context issue)');
         
-        //Use stream() instead of generate() for workflow compatibility
-        const stream = await intelligentAssistant.stream(
-          [{ role: "user", content: message }],
-          {
-            resourceId: "slack-bot",
-            threadId,
-            maxSteps: 5,
-          }
-        );
+        // Workaround: Call the working /api/chat route instead of direct agent invocation
+        // This avoids the empty response issue when calling agent directly from workflow context
+        const response = await fetch('http://localhost:5000/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message,
+            user_id: 'slack-bot',
+            session_id: threadId,
+          }),
+        });
         
-        // Collect streamed text
-        let text = '';
-        for await (const chunk of stream.textStream) {
-          text += chunk;
+        if (!response.ok) {
+          const errorText = await response.text();
+          logger?.error('❌ [Slack] API call failed', {
+            status: response.status,
+            statusText: response.statusText,
+            errorText,
+          });
+          throw new Error(`API call failed: ${response.status} ${response.statusText}`);
         }
         
-        logger?.info('✅ [Slack] Agent streaming completed', {
+        const apiResult = await response.json();
+        const text = apiResult.response || '';
+        
+        logger?.info('✅ [Slack] Agent API call completed', {
           responseLength: text.length,
         });
         
