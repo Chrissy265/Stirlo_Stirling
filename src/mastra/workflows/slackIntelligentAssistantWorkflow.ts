@@ -147,9 +147,10 @@ const routerStep = createStep({
       const { message, threadId, channel, messageTs } = inputData.slackPayload;
       
       try {
-        logger?.info('🤖 [Slack] Starting agent generation');
+        logger?.info('🤖 [Slack] Starting agent generation (using stream)');
         
-        const { text } = await intelligentAssistant.generate(
+        //Use stream() instead of generate() for workflow compatibility
+        const stream = await intelligentAssistant.stream(
           [{ role: "user", content: message }],
           {
             resourceId: "slack-bot",
@@ -158,7 +159,13 @@ const routerStep = createStep({
           }
         );
         
-        logger?.info('✅ [Slack] Agent generation completed', {
+        // Collect streamed text
+        let text = '';
+        for await (const chunk of stream.textStream) {
+          text += chunk;
+        }
+        
+        logger?.info('✅ [Slack] Agent streaming completed', {
           responseLength: text.length,
         });
         
