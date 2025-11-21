@@ -162,6 +162,12 @@ const routerStep = createStep({
           responseLength: text.length,
         });
         
+        // Validate agent response is not empty
+        if (!text || text.trim().length === 0) {
+          logger?.error('❌ [Slack] Agent returned empty response');
+          throw new Error('Agent generated empty response');
+        }
+        
         // Send reply to Slack
         const { slack } = await getClient();
         const cleanResponse = convertMarkdownToSlackFormat(text);
@@ -176,20 +182,35 @@ const routerStep = createStep({
           logger?.warn('⚠️ [Slack] Could not remove hourglass reaction');
         }
         
+        // Split into chunks and filter out empty ones
         const chunks = splitTextIntoChunks(cleanResponse, 2900);
-        const blocks = chunks.map(chunk => ({
+        const nonEmptyChunks = chunks.filter(chunk => chunk.trim().length > 0);
+        
+        // Safety check: ensure we have content to send
+        if (nonEmptyChunks.length === 0) {
+          logger?.warn('⚠️ [Slack] All chunks were empty after filtering, using fallback message');
+          nonEmptyChunks.push("I encountered an issue generating a response. Please try asking your question again.");
+        }
+        
+        const blocks = nonEmptyChunks.map(chunk => ({
           type: "section" as const,
           text: { type: "mrkdwn" as const, text: chunk },
         }));
+        
+        // Ensure text parameter is always provided (Slack best practice)
+        const fallbackText = cleanResponse.trim().substring(0, 3000) || nonEmptyChunks[0];
         
         await slack.chat.postMessage({
           channel,
           thread_ts: messageTs,
           blocks,
-          text: cleanResponse.substring(0, 3000),
+          text: fallbackText,
         });
         
-        logger?.info('✅ [Slack] Reply posted successfully');
+        logger?.info('✅ [Slack] Reply posted successfully', {
+          chunksCount: nonEmptyChunks.length,
+          textLength: fallbackText.length
+        });
         
         return {
           triggerType: 'slack',
