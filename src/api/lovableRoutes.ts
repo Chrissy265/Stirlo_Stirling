@@ -50,6 +50,7 @@ export function getChatRoute(): ApiRoute {
               resourceId: user_id,
               threadId: `lovable/${session_id}`,
               maxSteps: 5,
+              format: "aisdk",
             }
           );
 
