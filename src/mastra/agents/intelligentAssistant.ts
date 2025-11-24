@@ -1,4 +1,4 @@
-import { openai } from "@ai-sdk/openai";
+import { createOpenAI } from "@ai-sdk/openai";
 import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 import { sharedPostgresStorage } from "../storage";
@@ -6,6 +6,13 @@ import { sharepointSearchTool } from "../tools/sharepointSearchTool";
 import { mondaySearchTool, mondayGetUpcomingDeadlinesTool, mondaySearchWithDocsTool, mondayListWorkspacesTool } from "../tools/mondayTool";
 import { ragSearchTool, ragStoreTool } from "../tools/ragTool";
 import { internalSearchOrchestratorTool } from "../tools/internalSearchOrchestratorTool";
+
+// Using Replit's AI Integrations service - provides OpenAI-compatible API without requiring personal API key
+// Charges are billed to Replit credits instead of OpenAI account
+const openai = createOpenAI({
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+});
 
 /**
  * Intelligent Slack AI Assistant Agent
