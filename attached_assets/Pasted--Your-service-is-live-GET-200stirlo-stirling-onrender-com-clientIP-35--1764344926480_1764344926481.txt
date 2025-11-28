@@ -1,0 +1,40 @@
+     ==> Your service is live 🎉
+     ==> 
+     [GET]200stirlo-stirling.onrender.com/clientIP="35.230.45.39" requestID="9ba31ee3-3eb2-42e9" responseTimeMS=16 responseBytes=1267 userAgent="Go-http-client/2.0"
+     ==> ///////////////////////////////////////////////////////////
+     ==> 
+     ==> Available at your primary URL https://stirlo-stirling.onrender.com
+     ==> 
+     ==> ///////////////////////////////////////////////////////////
+{"level":"info","time":"2025-11-28T15:46:17.101Z","name":"Mastra","type":"event_callback","eventType":"app_mention","channel":"C09PHGX6YDU","eventId":"Ev0A0T8U9P41","timestamp":"2025-11-28T15:46:17.101Z","msg":"📝 [Slack Socket Mode] Received event"}
+{"level":"info","time":"2025-11-28T15:46:17.102Z","name":"Mastra","eventId":"Ev0A0T8U9P41","ackTimeMs":1,"msg":"✅ [Slack Socket Mode] Event acknowledged"}
+{"level":"info","time":"2025-11-28T15:46:17.102Z","name":"Mastra","eventType":"app_mention","channel":"C09PHGX6YDU","user":"U09ABE7ASBT","text":"<@U09Q3RHKD8V> What tasks are available today?","msg":"📝 [Slack Socket Mode] Processing event"}
+{"level":"info","time":"2025-11-28T15:46:17.146Z","name":"Mastra","channelName":"stirlo-assistant","msg":"📝 [Slack Socket Mode] Got channel info"}
+{"level":"info","time":"2025-11-28T15:46:17.219Z","name":"Mastra","eventId":"Ev0A0T8U9P41","channel":"C09PHGX6YDU","user":"U09ABE7ASBT","msg":"🚀 [Slack Socket Mode] Invoking workflow handler"}
+{"level":"info","time":"2025-11-28T15:46:17.219Z","name":"Mastra","channel":"C09PHGX6YDU","channelName":"stirlo-assistant","eventType":"app_mention","hasText":true,"messagePreview":"<@U09Q3RHKD8V> What tasks are available today?","hasAuthorizations":true,"authorizationsLength":1,"msg":"📝 [Slack Trigger] Received message from Socket Mode"}
+{"level":"info","time":"2025-11-28T15:46:17.219Z","name":"Mastra","eventType":"app_mention","messageLength":46,"msg":"📝 [Slack Trigger] Processing message (pre-filtered by Socket Mode)"}
+{"level":"info","time":"2025-11-28T15:46:17.219Z","name":"Mastra","workflowId":"slackIntelligentAssistantWorkflow","threadId":"slack/1764225911.487469","channel":"C09PHGX6YDU","messageTs":"1764344775.371059","msg":"🚀 [Slack Trigger] Starting workflow execution"}
+{"level":"info","time":"2025-11-28T15:46:17.220Z","name":"Mastra","msg":"✅ [Slack Trigger] Workflow run created, starting execution"}
+     [POST]206stirlo-stirling.onrender.com/api/inngest?fnId=replit-agent-workflow-workflow.slack-intelligent-assistant&stepId=stepclientIP="198.212.45.98" requestID="5d3a4304-3ae6-4938" responseTimeMS=44 responseBytes=1147 userAgent="inngest.com"
+{"level":"info","time":"2025-11-28T15:46:19.241Z","name":"Mastra","threadId":"slack/1764225911.487469","channel":"C09PHGX6YDU","messageTs":"1764344775.371059","messageLength":46,"messagePreview":"<@U09Q3RHKD8V> What tasks are available today?","msg":"🤖 [Slack Workflow] Step 1: Starting agent generation"}
+     [POST]206stirlo-stirling.onrender.com/api/inngest?fnId=replit-agent-workflow-workflow.slack-intelligent-assistant&stepId=stepclientIP="198.212.45.71" requestID="618d2d1e-2b9f-45ee" responseTimeMS=13710 responseBytes=1450 userAgent="inngest.com"
+     [POST]206stirlo-stirling.onrender.com/api/inngest?fnId=replit-agent-workflow-workflow.slack-intelligent-assistant&stepId=stepclientIP="198.212.45.97" requestID="2b092cf0-6014-481c" responseTimeMS=104 responseBytes=1200 userAgent="inngest.com"
+     [POST]206stirlo-stirling.onrender.com/api/inngest?fnId=replit-agent-workflow-workflow.slack-intelligent-assistant&stepId=stepclientIP="198.212.45.72" requestID="a250eedc-5852-405a" responseTimeMS=18 responseBytes=1104 userAgent="inngest.com"
+     [POST]206stirlo-stirling.onrender.com/api/inngest?fnId=replit-agent-workflow-workflow.slack-intelligent-assistant&stepId=stepclientIP="198.212.45.71" requestID="3ea12d7d-37e7-41e1" responseTimeMS=11 responseBytes=1150 userAgent="inngest.com"
+     [POST]206stirlo-stirling.onrender.com/api/inngest?fnId=replit-agent-workflow-workflow.slack-intelligent-assistant&stepId=stepclientIP="198.212.45.69" requestID="8acfd10b-b215-47a1" responseTimeMS=263 responseBytes=1496 userAgent="inngest.com"
+     [POST]206stirlo-stirling.onrender.com/api/inngest?fnId=replit-agent-workflow-workflow.slack-intelligent-assistant&stepId=stepclientIP="198.212.45.98" requestID="e625c2d2-d580-4454" responseTimeMS=9 responseBytes=1152 userAgent="inngest.com"
+     [POST]206stirlo-stirling.onrender.com/api/inngest?fnId=replit-agent-workflow-workflow.slack-intelligent-assistant&stepId=stepclientIP="198.212.45.96" requestID="9e523b9e-20e6-4161" responseTimeMS=109 responseBytes=1201 userAgent="inngest.com"
+     [POST]206stirlo-stirling.onrender.com/api/inngest?fnId=replit-agent-workflow-workflow.slack-intelligent-assistant&stepId=stepclientIP="198.212.45.68" requestID="13fc4241-1a11-4bbd" responseTimeMS=114 responseBytes=1203 userAgent="inngest.com"
+     [POST]206stirlo-stirling.onrender.com/api/inngest?fnId=replit-agent-workflow-workflow.slack-intelligent-assistant&stepId=stepclientIP="198.212.45.97" requestID="31ae828c-bbb5-4fe4" responseTimeMS=17 responseBytes=1350 userAgent="inngest.com"
+     [POST]200stirlo-stirling.onrender.com/api/inngest?fnId=replit-agent-workflow-workflow.slack-intelligent-assistant&stepId=stepclientIP="198.212.45.98" requestID="e6de9b61-82f3-4c5a" responseTimeMS=10 responseBytes=1296 userAgent="inngest.com"
+{"level":"info","time":"2025-11-28T15:46:32.921Z","name":"Mastra","responseLength":0,"responsePreview":"","msg":"✅ [Slack Workflow] Step 1: Agent generation completed"}
+{"level":"info","time":"2025-11-28T15:46:34.497Z","name":"Mastra","channel":"C09PHGX6YDU","messageTs":"1764344775.371059","responseLength":0,"msg":"💬 [Slack Workflow] Step 2: Starting Slack reply"}
+🔌 [Slack] Using SLACK_BOT_TOKEN from environment
+🔍 [DEBUG] Bot token ends with: vhWDFiBl
+{"level":"warn","time":"2025-11-28T15:46:34.610Z","name":"Mastra","msg":"⚠️ [Slack Workflow] All chunks were empty, using fallback message"}
+{"level":"info","time":"2025-11-28T15:46:34.610Z","name":"Mastra","channel":"C09PHGX6YDU","threadTs":"1764344775.371059","blockCount":1,"msg":"📤 [Slack Workflow] Step 2: Posting message to Slack"}
+{"level":"info","time":"2025-11-28T15:46:34.737Z","name":"Mastra","messageTs":"1764344794.684779","ok":true,"blocksPosted":1,"msg":"✅ [Slack Workflow] Step 2: Message posted successfully"}
+{"level":"info","time":"2025-11-28T15:46:50.961Z","name":"Mastra","result":"success","msg":"✅ [Slack Trigger] Workflow execution completed"}
+{"level":"info","time":"2025-11-28T15:46:50.961Z","name":"Mastra","status":"success","handlerDurationMs":33742,"totalEventDurationMs":33860,"eventId":"Ev0A0T8U9P41","msg":"✅ [Slack Socket Mode] Handler completed successfully"}
+{"level":"info","time":"2025-11-28T15:46:50.962Z","name":"Mastra","timestamp":"1764344775.371059","channel":"C09PHGX6YDU","msg":"[Slack] Removing all reactions from message"}
+{"level":"info","time":"2025-11-28T15:46:51.291Z","name":"Mastra","emoji":"white_check_mark","timestamp":"1764344775.371059","channel":"C09PHGX6YDU","msg":"[Slack] Adding reaction to message"}
