@@ -7,12 +7,24 @@ import { mondaySearchTool, mondayGetUpcomingDeadlinesTool, mondaySearchWithDocsT
 import { ragSearchTool, ragStoreTool } from "../tools/ragTool";
 import { internalSearchOrchestratorTool } from "../tools/internalSearchOrchestratorTool";
 
-// Using Replit's AI Integrations service - provides OpenAI-compatible API without requiring personal API key
-// Charges are billed to Replit credits instead of OpenAI account
-const openai = createOpenAI({
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-});
+// Detect environment and configure OpenAI client accordingly
+// - Replit: Uses AI Integrations (AI_INTEGRATIONS_OPENAI_* variables) - billed to Replit credits
+// - Production (Render): Uses standard OpenAI API key (OPENAI_API_KEY)
+const isReplitEnvironment = Boolean(
+  process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && 
+  process.env.AI_INTEGRATIONS_OPENAI_API_KEY
+);
+
+const openai = isReplitEnvironment
+  ? createOpenAI({
+      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+    })
+  : createOpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+console.log(`🤖 [Agent] OpenAI configured for ${isReplitEnvironment ? 'Replit AI Integrations' : 'Standard OpenAI API'}`);
 
 /**
  * Intelligent Slack AI Assistant Agent
