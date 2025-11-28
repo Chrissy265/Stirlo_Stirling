@@ -1,4 +1,4 @@
-import { createOpenAI } from "@ai-sdk/openai";
+import { createAnthropic } from "@ai-sdk/anthropic";
 import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 import { sharedPostgresStorage } from "../storage";
@@ -7,37 +7,37 @@ import { mondaySearchTool, mondayGetUpcomingDeadlinesTool, mondaySearchWithDocsT
 import { ragSearchTool, ragStoreTool } from "../tools/ragTool";
 import { internalSearchOrchestratorTool } from "../tools/internalSearchOrchestratorTool";
 
-// Detect environment and configure OpenAI client accordingly
-// - Replit: Uses AI Integrations (AI_INTEGRATIONS_OPENAI_* variables) - billed to Replit credits
-// - Production (Render): Uses standard OpenAI API key (OPENAI_API_KEY)
+// Detect environment and configure Anthropic client accordingly
+// - Replit: Uses AI Integrations (AI_INTEGRATIONS_ANTHROPIC_* variables) - billed to Replit credits
+// - Production (Render): Uses standard Anthropic API key (ANTHROPIC_API_KEY)
 const isReplitEnvironment = Boolean(
-  process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && 
-  process.env.AI_INTEGRATIONS_OPENAI_API_KEY
+  process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL && 
+  process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY
 );
 
 // Detailed startup logging for debugging API key configuration
 console.log('🔧 [Agent Startup] Environment detection:', {
   isReplitEnvironment,
-  hasReplitBaseURL: Boolean(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL),
-  hasReplitApiKey: Boolean(process.env.AI_INTEGRATIONS_OPENAI_API_KEY),
-  hasStandardApiKey: Boolean(process.env.OPENAI_API_KEY),
-  openaiKeyPrefix: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 8) + '...' : 'NOT SET',
+  hasReplitBaseURL: Boolean(process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL),
+  hasReplitApiKey: Boolean(process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY),
+  hasStandardApiKey: Boolean(process.env.ANTHROPIC_API_KEY),
+  anthropicKeyPrefix: process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.substring(0, 10) + '...' : 'NOT SET',
 });
 
-if (!isReplitEnvironment && !process.env.OPENAI_API_KEY) {
-  console.error('❌ [Agent Startup] CRITICAL: No OpenAI API key configured! OPENAI_API_KEY is missing.');
+if (!isReplitEnvironment && !process.env.ANTHROPIC_API_KEY) {
+  console.error('❌ [Agent Startup] CRITICAL: No Anthropic API key configured! ANTHROPIC_API_KEY is missing.');
 }
 
-const openai = isReplitEnvironment
-  ? createOpenAI({
-      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+const anthropic = isReplitEnvironment
+  ? createAnthropic({
+      baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
+      apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
     })
-  : createOpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+  : createAnthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
     });
 
-console.log(`🤖 [Agent] OpenAI configured for ${isReplitEnvironment ? 'Replit AI Integrations' : 'Standard OpenAI API'}`);
+console.log(`🤖 [Agent] Anthropic Claude configured for ${isReplitEnvironment ? 'Replit AI Integrations' : 'Standard Anthropic API'}`);
 
 /**
  * Intelligent Slack AI Assistant Agent
@@ -151,7 +151,7 @@ The Internal Search Orchestrator automatically:
 Remember: Your goal is to make the team more efficient by providing instant, accurate, and CLICKABLE access to information from across their workplace tools.
   `,
   
-  model: openai("gpt-4o-mini"),
+  model: anthropic("claude-sonnet-4-5"),
   
   tools: {
     internalSearchOrchestratorTool,
