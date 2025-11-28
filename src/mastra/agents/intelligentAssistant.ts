@@ -15,6 +15,19 @@ const isReplitEnvironment = Boolean(
   process.env.AI_INTEGRATIONS_OPENAI_API_KEY
 );
 
+// Detailed startup logging for debugging API key configuration
+console.log('🔧 [Agent Startup] Environment detection:', {
+  isReplitEnvironment,
+  hasReplitBaseURL: Boolean(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL),
+  hasReplitApiKey: Boolean(process.env.AI_INTEGRATIONS_OPENAI_API_KEY),
+  hasStandardApiKey: Boolean(process.env.OPENAI_API_KEY),
+  openaiKeyPrefix: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 8) + '...' : 'NOT SET',
+});
+
+if (!isReplitEnvironment && !process.env.OPENAI_API_KEY) {
+  console.error('❌ [Agent Startup] CRITICAL: No OpenAI API key configured! OPENAI_API_KEY is missing.');
+}
+
 const openai = isReplitEnvironment
   ? createOpenAI({
       baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,

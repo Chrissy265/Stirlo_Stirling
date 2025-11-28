@@ -94,31 +94,66 @@ const useAgentStep = createStep({
         messagePreview: message.substring(0, 100),
       });
       
-      const { text } = await intelligentAssistant.generate(
-        [{ role: "user", content: message }],
-        {
-          resourceId: "slack-bot",
-          threadId,
-          maxSteps: 5,
-          format: "aisdk",
-        }
-      );
+      logger?.info('🔧 [Slack Workflow] Step 1: About to call agent.generate()');
+      
+      let result;
+      try {
+        result = await intelligentAssistant.generate(
+          [{ role: "user", content: message }],
+          {
+            resourceId: "slack-bot",
+            threadId,
+            maxSteps: 5,
+          }
+        );
+      } catch (generateError: any) {
+        logger?.error('❌ [Slack Workflow] Step 1: agent.generate() threw an exception', {
+          errorMessage: generateError?.message,
+          errorName: generateError?.name,
+          errorCode: generateError?.code,
+          errorStatus: generateError?.status,
+          errorCause: generateError?.cause ? String(generateError.cause) : undefined,
+          errorData: generateError?.data ? JSON.stringify(generateError.data).substring(0, 500) : undefined,
+          fullError: JSON.stringify(generateError, Object.getOwnPropertyNames(generateError), 2).substring(0, 2000),
+        });
+        throw generateError;
+      }
+      
+      const text = result?.text || '';
       
       logger?.info('✅ [Slack Workflow] Step 1: Agent generation completed', {
         responseLength: text.length,
         responsePreview: text.substring(0, 200),
+        hasText: Boolean(result?.text),
+        resultKeys: result ? Object.keys(result) : [],
+        finishReason: (result as any)?.finishReason,
+        usage: (result as any)?.usage,
+        toolCalls: (result as any)?.toolCalls?.length || 0,
+        toolResults: (result as any)?.toolResults?.length || 0,
       });
+      
+      if (!text || text.length === 0) {
+        logger?.error('❌ [Slack Workflow] Step 1: Agent returned EMPTY response', {
+          fullResult: JSON.stringify(result, null, 2).substring(0, 3000),
+          resultType: typeof result,
+          threadId,
+          channel,
+        });
+      }
       
       return {
         response: text,
         channel,
         messageTs,
       };
-    } catch (error) {
+    } catch (error: any) {
       logger?.error('❌ [Slack Workflow] Step 1: Agent generation FAILED', {
         error: error instanceof Error ? error.message : String(error),
         errorStack: error instanceof Error ? error.stack : undefined,
         errorType: error?.constructor?.name,
+        errorCode: error?.code,
+        errorStatus: error?.status,
+        errorResponse: error?.response ? JSON.stringify(error.response).substring(0, 1000) : undefined,
         threadId,
         channel,
         messageTs,
