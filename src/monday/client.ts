@@ -1,5 +1,11 @@
 import type { MondayApiResponse, MondayUser, MondayBoard, ItemsPageResponse } from './types.js';
-import { GET_ITEMS_FOR_DATE_FILTER, GET_USERS, GET_BOARDS_WITH_COLUMNS } from './queries.js';
+import { buildDateFilterQuery, GET_ITEMS_NO_FILTER, GET_USERS, GET_BOARDS_WITH_COLUMNS } from './queries.js';
+
+export interface DateFilterOptions {
+  columnId: string;
+  startDate: string;
+  endDate: string;
+}
 
 export class MondayClient {
   private apiToken: string;
@@ -43,8 +49,36 @@ export class MondayClient {
     return data.boards || [];
   }
 
+  async getItemsPageFiltered(
+    boardId: string, 
+    dateFilter: DateFilterOptions,
+    limit: number = 100,
+    cursor?: string
+  ): Promise<{ board: MondayBoard; itemsPage: ItemsPageResponse }> {
+    const query = buildDateFilterQuery(
+      boardId, 
+      dateFilter.columnId, 
+      dateFilter.startDate, 
+      dateFilter.endDate,
+      limit,
+      cursor
+    );
+    
+    const data = await this.query<{ boards: MondayBoard[] }>(query);
+
+    const board = data.boards?.[0];
+    if (!board) {
+      throw new Error(`Board ${boardId} not found`);
+    }
+
+    return {
+      board,
+      itemsPage: board.items_page || { cursor: null, items: [] },
+    };
+  }
+
   async getItemsPage(boardId: string, limit: number = 100, cursor?: string): Promise<{ board: MondayBoard; itemsPage: ItemsPageResponse }> {
-    const data = await this.query<{ boards: MondayBoard[] }>(GET_ITEMS_FOR_DATE_FILTER, {
+    const data = await this.query<{ boards: MondayBoard[] }>(GET_ITEMS_NO_FILTER, {
       boardId,
       limit,
       cursor: cursor || null,
@@ -58,6 +92,35 @@ export class MondayClient {
     return {
       board,
       itemsPage: board.items_page || { cursor: null, items: [] },
+    };
+  }
+
+  async getItemsInDateRange(
+    boardId: string, 
+    dateColumnId: string,
+    startDate: Date, 
+    endDate: Date
+  ): Promise<{ board: MondayBoard; items: any[] }> {
+    const allItems: any[] = [];
+    let cursor: string | undefined = undefined;
+    let boardInfo: MondayBoard | undefined;
+
+    const dateFilter: DateFilterOptions = {
+      columnId: dateColumnId,
+      startDate: this.formatDateForApi(startDate),
+      endDate: this.formatDateForApi(endDate),
+    };
+
+    do {
+      const { board, itemsPage } = await this.getItemsPageFiltered(boardId, dateFilter, 100, cursor);
+      boardInfo = board;
+      allItems.push(...itemsPage.items);
+      cursor = itemsPage.cursor || undefined;
+    } while (cursor);
+
+    return {
+      board: boardInfo!,
+      items: allItems,
     };
   }
 
@@ -77,5 +140,9 @@ export class MondayClient {
       board: boardInfo!,
       items: allItems,
     };
+  }
+
+  private formatDateForApi(date: Date): string {
+    return date.toISOString().split('T')[0];
   }
 }

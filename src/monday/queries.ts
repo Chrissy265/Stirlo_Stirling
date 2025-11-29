@@ -1,5 +1,63 @@
-export const GET_ITEMS_FOR_DATE_FILTER = `
-  query GetItemsForDateFilter($boardId: ID!, $limit: Int!, $cursor: String) {
+export function buildDateFilterQuery(boardId: string, columnId: string, startDate: string, endDate: string, limit: number = 100, cursor?: string): string {
+  const cursorParam = cursor ? `cursor: "${cursor}",` : '';
+  return `
+    query {
+      boards(ids: ["${boardId}"]) {
+        id
+        name
+        workspace {
+          id
+          name
+        }
+        items_page(
+          limit: ${limit},
+          ${cursorParam}
+          query_params: {
+            rules: [
+              {
+                column_id: "${columnId}",
+                compare_value: ["${startDate}", "${endDate}"],
+                operator: between
+              }
+            ]
+          }
+        ) {
+          cursor
+          items {
+            id
+            name
+            state
+            created_at
+            updated_at
+            group {
+              id
+              title
+            }
+            column_values {
+              id
+              text
+              value
+              type
+              column {
+                id
+                title
+              }
+            }
+            assets {
+              id
+              name
+              url
+              file_extension
+            }
+          }
+        }
+      }
+    }
+  `;
+}
+
+export const GET_ITEMS_NO_FILTER = `
+  query GetItemsNoFilter($boardId: ID!, $limit: Int!, $cursor: String) {
     boards(ids: [$boardId]) {
       id
       name

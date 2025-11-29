@@ -7,9 +7,12 @@ import type {
   MondayUser, 
   MondayItem,
   MondayColumnValue,
+  MondayBoard,
+  MondayColumn,
   ColumnValue,
   DateRange 
 } from './types.js';
+import { GET_BOARDS_IN_WORKSPACE, GET_ALL_WORKSPACES } from './queries.js';
 
 export class MondayWorkspaceManager {
   private workspaces: Map<string, WorkspaceConfig> = new Map();
@@ -23,12 +26,67 @@ export class MondayWorkspaceManager {
     for (const config of configs) {
       this.workspaces.set(config.id, config);
       this.clients.set(config.id, new MondayClient(config.apiToken));
+      
+      if (config.boards.length === 0) {
+        console.log(`🔍 [MondayWorkspaceManager] No boards configured for ${config.name}, discovering boards...`);
+        const discoveredBoards = await this.discoverBoards(config);
+        config.boards = discoveredBoards;
+      }
+      
       console.log(`📁 [MondayWorkspaceManager] Added workspace: ${config.name} (${config.id}) with ${config.boards.length} board(s)`);
     }
 
     await this.loadUsers();
     this.initialized = true;
     console.log(`✅ [MondayWorkspaceManager] Initialization complete. User cache: ${this.userCache.size} users`);
+  }
+
+  private async discoverBoards(workspace: WorkspaceConfig): Promise<BoardConfig[]> {
+    const client = this.clients.get(workspace.id);
+    if (!client) return [];
+
+    const boards: BoardConfig[] = [];
+    
+    try {
+      const workspacesData = await client.query<{ workspaces: Array<{ id: string; name: string }> }>(GET_ALL_WORKSPACES);
+      
+      for (const ws of workspacesData.workspaces || []) {
+        try {
+          const boardsData = await client.query<{ boards: MondayBoard[] }>(GET_BOARDS_IN_WORKSPACE, { workspaceId: ws.id });
+          
+          for (const board of boardsData.boards || []) {
+            const columns = board.columns || [];
+            
+            const dateColumn = columns.find((c: MondayColumn) => 
+              c.type === 'date' && 
+              (c.title.toLowerCase().includes('deadline') || 
+               c.title.toLowerCase().includes('due') ||
+               c.title.toLowerCase().includes('date'))
+            ) || columns.find((c: MondayColumn) => c.type === 'date');
+            
+            const assigneeColumn = columns.find((c: MondayColumn) => 
+              c.type === 'people' || c.type === 'multiple-person'
+            );
+            
+            if (dateColumn) {
+              boards.push({
+                id: board.id,
+                name: board.name,
+                dateColumnId: dateColumn.id,
+                assigneeColumnId: assigneeColumn?.id || '',
+              });
+              console.log(`📋 [MondayWorkspaceManager] Discovered board: ${board.name} (date: ${dateColumn.title}, assignee: ${assigneeColumn?.title || 'none'})`);
+            }
+          }
+        } catch (err: any) {
+          console.warn(`⚠️ [MondayWorkspaceManager] Failed to get boards from workspace ${ws.name}: ${err.message}`);
+        }
+      }
+    } catch (err: any) {
+      console.error(`❌ [MondayWorkspaceManager] Failed to discover workspaces: ${err.message}`);
+    }
+
+    return boards;
   }
 
   private async loadUsers(): Promise<void> {
@@ -97,16 +155,42 @@ export class MondayWorkspaceManager {
     const tasks: Task[] = [];
     
     try {
-      const { board: boardData, items } = await client.getAllItemsFromBoard(board.id);
+      let items: any[];
+      let boardData: any;
+      
+      if (board.dateColumnId) {
+        try {
+          const result = await client.getItemsInDateRange(
+            board.id, 
+            board.dateColumnId, 
+            startDate, 
+            endDate
+          );
+          boardData = result.board;
+          items = result.items;
+          console.log(`🔍 [MondayWorkspaceManager] Used API date filter for board ${board.name}, got ${items.length} items`);
+        } catch (filterError: any) {
+          console.warn(`⚠️ [MondayWorkspaceManager] API date filter failed for board ${board.name}, falling back to client-side: ${filterError.message}`);
+          const result = await client.getAllItemsFromBoard(board.id);
+          boardData = result.board;
+          items = result.items.filter((item: any) => {
+            const dateCol = item.column_values?.find((c: any) => c.id === board.dateColumnId);
+            if (!dateCol?.value) return false;
+            const dueDate = this.parseDateColumn(dateCol.value);
+            if (!dueDate) return false;
+            return dueDate.getTime() >= startDate.getTime() && dueDate.getTime() <= endDate.getTime();
+          });
+        }
+      } else {
+        const result = await client.getAllItemsFromBoard(board.id);
+        boardData = result.board;
+        items = result.items;
+      }
       
       for (const item of items) {
         const task = this.parseItemToTask(item, board, workspace, boardData);
-        
         if (task.dueDate) {
-          const dueTime = task.dueDate.getTime();
-          if (dueTime >= startDate.getTime() && dueTime <= endDate.getTime()) {
-            tasks.push(task);
-          }
+          tasks.push(task);
         }
       }
     } catch (error: any) {
