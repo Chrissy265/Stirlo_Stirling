@@ -11,9 +11,9 @@ export function formatTasksHelp(): SlackMessage {
       text: {
         type: 'mrkdwn',
         text: '*View Tasks (Team-wide):*\n' +
-          '• `/stirlo-tasks today` - Show all tasks due today\n' +
-          '• `/stirlo-tasks week` - Show all tasks due this week\n' +
-          '• `/stirlo-tasks overdue` - Show all overdue tasks'
+          '• `@Stirlo tasks today` - Show all tasks due today\n' +
+          '• `@Stirlo tasks week` - Show all tasks due this week\n' +
+          '• `@Stirlo tasks overdue` - Show all overdue tasks'
       }
     },
     {
@@ -21,18 +21,17 @@ export function formatTasksHelp(): SlackMessage {
       text: {
         type: 'mrkdwn',
         text: '*View Your Tasks Only:*\n' +
-          '• `/stirlo-tasks my today` - Show YOUR tasks due today\n' +
-          '• `/stirlo-tasks my week` - Show YOUR tasks due this week\n' +
-          '• `/stirlo-tasks my overdue` - Show YOUR overdue tasks'
+          '• `@Stirlo my tasks today` - Show YOUR tasks due today\n' +
+          '• `@Stirlo my tasks week` - Show YOUR tasks due this week'
       }
     },
     {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: '*Manual Triggers (Admin Only):*\n' +
-          '• `/stirlo-tasks trigger daily` - Run daily notifications\n' +
-          '• `/stirlo-tasks trigger weekly` - Run weekly notifications'
+        text: '*Manual Triggers:*\n' +
+          '• `@Stirlo trigger daily` - Run daily notifications\n' +
+          '• `@Stirlo trigger weekly` - Run weekly notifications'
       }
     },
     {
@@ -42,7 +41,7 @@ export function formatTasksHelp(): SlackMessage {
       type: 'context',
       elements: [{
         type: 'mrkdwn',
-        text: '💡 You can also DM Stirlo: "show my tasks for today"'
+        text: '💡 You can also DM Stirlo with natural requests like: "show my tasks for today"'
       }]
     }
   ];
@@ -67,7 +66,7 @@ export function formatTasksError(error: string): SlackMessage {
         type: 'context',
         elements: [{
           type: 'mrkdwn',
-          text: 'Use `/stirlo-tasks help` to see available commands'
+          text: 'Try `@Stirlo tasks help` to see available commands'
         }]
       }
     ],

@@ -541,6 +541,222 @@ export async function initializeSocketMode<
   }
 }
 
+/**
+ * SlackNotifier - Utility class for sending messages to Slack channels and users
+ * Integrates with the existing Socket Mode setup
+ */
+export class SlackNotifier {
+  private slack: WebClient;
+  private logger: IMastraLogger | undefined;
+
+  constructor(slack: WebClient, logger?: IMastraLogger) {
+    this.slack = slack;
+    this.logger = logger;
+    this.logger?.info('📤 [SlackNotifier] Initialized');
+  }
+
+  /**
+   * Send a Block Kit message to a channel
+   */
+  async sendToChannel(
+    channelId: string,
+    message: { blocks: any[]; text?: string },
+    threadTs?: string
+  ): Promise<{ ok: boolean; ts?: string; error?: string }> {
+    this.logger?.info('📤 [SlackNotifier] Sending message to channel', {
+      channelId,
+      blockCount: message.blocks?.length,
+      hasThread: !!threadTs,
+    });
+
+    try {
+      const result = await this.slack.chat.postMessage({
+        channel: channelId,
+        blocks: message.blocks,
+        text: message.text || 'New notification',
+        thread_ts: threadTs,
+      });
+
+      this.logger?.info('✅ [SlackNotifier] Message sent to channel', {
+        channelId,
+        ts: result.ts,
+      });
+
+      return { ok: true, ts: result.ts };
+    } catch (error) {
+      this.logger?.error('❌ [SlackNotifier] Failed to send message to channel', {
+        channelId,
+        error: format(error),
+      });
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Send a Block Kit message as a direct message to a user
+   */
+  async sendDirectMessage(
+    userId: string,
+    message: { blocks: any[]; text?: string }
+  ): Promise<{ ok: boolean; ts?: string; error?: string }> {
+    this.logger?.info('📤 [SlackNotifier] Sending DM to user', {
+      userId,
+      blockCount: message.blocks?.length,
+    });
+
+    try {
+      // First, open a conversation with the user
+      const conversation = await this.slack.conversations.open({
+        users: userId,
+      });
+
+      if (!conversation.channel?.id) {
+        this.logger?.error('❌ [SlackNotifier] Failed to open conversation', {
+          userId,
+        });
+        return { ok: false, error: 'Failed to open conversation with user' };
+      }
+
+      // Then send the message
+      const result = await this.slack.chat.postMessage({
+        channel: conversation.channel.id,
+        blocks: message.blocks,
+        text: message.text || 'New notification',
+      });
+
+      this.logger?.info('✅ [SlackNotifier] DM sent to user', {
+        userId,
+        ts: result.ts,
+      });
+
+      return { ok: true, ts: result.ts };
+    } catch (error) {
+      this.logger?.error('❌ [SlackNotifier] Failed to send DM', {
+        userId,
+        error: format(error),
+      });
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Update an existing message
+   */
+  async updateMessage(
+    channelId: string,
+    ts: string,
+    message: { blocks: any[]; text?: string }
+  ): Promise<{ ok: boolean; error?: string }> {
+    this.logger?.info('📤 [SlackNotifier] Updating message', {
+      channelId,
+      ts,
+    });
+
+    try {
+      await this.slack.chat.update({
+        channel: channelId,
+        ts,
+        blocks: message.blocks,
+        text: message.text || 'Updated notification',
+      });
+
+      this.logger?.info('✅ [SlackNotifier] Message updated', {
+        channelId,
+        ts,
+      });
+
+      return { ok: true };
+    } catch (error) {
+      this.logger?.error('❌ [SlackNotifier] Failed to update message', {
+        channelId,
+        ts,
+        error: format(error),
+      });
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Add a reaction to a message
+   */
+  async addReaction(
+    channelId: string,
+    ts: string,
+    emoji: string
+  ): Promise<{ ok: boolean }> {
+    try {
+      await this.slack.reactions.add({
+        channel: channelId,
+        timestamp: ts,
+        name: emoji,
+      });
+      return { ok: true };
+    } catch (error) {
+      this.logger?.error('❌ [SlackNotifier] Failed to add reaction', {
+        channelId,
+        ts,
+        emoji,
+        error: format(error),
+      });
+      return { ok: false };
+    }
+  }
+
+  /**
+   * Remove a reaction from a message
+   */
+  async removeReaction(
+    channelId: string,
+    ts: string,
+    emoji: string
+  ): Promise<{ ok: boolean }> {
+    try {
+      await this.slack.reactions.remove({
+        channel: channelId,
+        timestamp: ts,
+        name: emoji,
+      });
+      return { ok: true };
+    } catch (error) {
+      // Ignore "no_reaction" errors - reaction may not exist
+      if (
+        isWebAPICallError(error) &&
+        error.code === ErrorCode.PlatformError &&
+        error.data?.error === 'no_reaction'
+      ) {
+        return { ok: true };
+      }
+      this.logger?.error('❌ [SlackNotifier] Failed to remove reaction', {
+        channelId,
+        ts,
+        emoji,
+        error: format(error),
+      });
+      return { ok: false };
+    }
+  }
+}
+
+// Singleton instance for global access
+let slackNotifierInstance: SlackNotifier | null = null;
+
+export function getSlackNotifier(): SlackNotifier | null {
+  return slackNotifierInstance;
+}
+
+export function setSlackNotifier(notifier: SlackNotifier): void {
+  slackNotifierInstance = notifier;
+}
+
 // Diagnostic test endpoint
 export function getSlackTestRoute(): ApiRoute {
   return {

@@ -17,7 +17,9 @@ import { slackPostMessageTool, slackFormatTaskListTool } from "./tools/slackTool
 import { ragSearchTool, ragStoreTool } from "./tools/ragTool";
 import { internalSearchOrchestratorTool } from "./tools/internalSearchOrchestratorTool";
 import { slackIntelligentAssistantWorkflow } from "./workflows/slackIntelligentAssistantWorkflow";
-import { initializeSocketMode, getSlackTestRoute } from "../triggers/slackTriggers";
+import { initializeSocketMode, getSlackTestRoute, SlackNotifier, setSlackNotifier, getClient } from "../triggers/slackTriggers";
+import { parseTaskCommand, hasTaskKeywords, stripBotMention, handleTaskCommand } from "../slack/handlers";
+import { initializeMonitoringServices, getMonitoringServices } from "../services";
 import { getChatRoute, getHistoryRoute, getConversationRoute, getHealthRoute } from "../api/lovableRoutes";
 import { format } from "node:util";
 import { startKeepAlive } from "../services/keepAlive";
@@ -272,6 +274,17 @@ if (process.env.RENDER) {
   logger?.debug("⏸️  [Keep-Alive] Not on Render, service disabled");
 }
 
+// Initialize monitoring services for task commands
+initializeMonitoringServices().then(() => {
+  const logger = mastra.getLogger();
+  logger?.info("✅ [Monitoring] Services initialized for task commands");
+}).catch((error) => {
+  const logger = mastra.getLogger();
+  logger?.warn("⚠️ [Monitoring] Failed to initialize services (task commands may not work)", {
+    error: format(error),
+  });
+});
+
 // Initialize Slack Socket Mode connection
 // This connects to Slack via WebSocket instead of webhooks
 initializeSocketMode({
@@ -304,7 +317,69 @@ initializeSocketMode({
         messageLength: payload?.event?.text?.length,
       });
 
-      // Run the workflow
+      // Check for task-related commands before running the workflow
+      const messageText = payload?.event?.text || '';
+      const strippedMessage = stripBotMention(messageText);
+      
+      if (hasTaskKeywords(strippedMessage)) {
+        logger?.info("🔍 [Slack Trigger] Detected task-related keywords, checking for command", {
+          strippedMessage: strippedMessage.substring(0, 100),
+        });
+        
+        const parsedCommand = parseTaskCommand(strippedMessage);
+        
+        if (parsedCommand.type !== null) {
+          logger?.info("📋 [Slack Trigger] Task command detected, handling directly", {
+            commandType: parsedCommand.type,
+            isPersonal: parsedCommand.isPersonal,
+          });
+          
+          // Get monitoring services and slack notifier
+          const monitoringServices = getMonitoringServices();
+          
+          if (!monitoringServices) {
+            logger?.error("❌ [Slack Trigger] Monitoring services not initialized");
+            return null;
+          }
+          
+          // Get Slack client and create notifier
+          const { slack } = await getClient();
+          const slackNotifier = new SlackNotifier(slack, logger);
+          setSlackNotifier(slackNotifier);
+          
+          // Handle the task command
+          const result = await handleTaskCommand(
+            parsedCommand,
+            {
+              userId: payload.event.user,
+              channel: payload.event.channel,
+              threadTs: payload.event.thread_ts,
+              messageTs: payload.event.ts,
+            },
+            monitoringServices.taskMonitor,
+            slackNotifier
+          );
+          
+          // Send the response to Slack
+          const response = await slackNotifier.sendToChannel(
+            payload.event.channel,
+            result.message,
+            payload.event.thread_ts || payload.event.ts
+          );
+          
+          logger?.info("✅ [Slack Trigger] Task command response sent", {
+            commandType: parsedCommand.type,
+            responseOk: response.ok,
+            isError: result.isError,
+          });
+          
+          // Return null to indicate we've handled this message directly
+          // (the workflow won't run for task commands)
+          return null;
+        }
+      }
+
+      // Not a task command - run the workflow
       logger?.info("🚀 [Slack Trigger] Starting workflow execution", {
         workflowId: "slackIntelligentAssistantWorkflow",
         threadId: `slack/${payload.event.thread_ts || payload.event.ts}`,
