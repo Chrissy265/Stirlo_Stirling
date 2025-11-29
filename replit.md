@@ -35,7 +35,7 @@ Preferred communication style: Simple, everyday language.
 
 **Rationale**: Migrated from OpenAI GPT to Anthropic Claude for improved production reliability. Multi-step reasoning allows the agent to chain tool calls and refine responses. Zod schemas ensure type safety and validate inputs before execution.
 
-### Task Monitoring Infrastructure (Phase 1-5 Complete)
+### Task Monitoring Infrastructure (Phase 1-6 Complete)
 - **Timezone Handling**: DST-aware Australia/Sydney timezone utilities
 - **Algorithm**: Hourly iteration (O(48)) to find correct midnight boundaries during DST transitions
 - **Database Tables**: user_mappings, task_alerts, query_log with proper indexes
@@ -55,6 +55,20 @@ Users can query tasks via @-mentions in any channel:
 - `@Stirlo trigger weekly` - Manually trigger weekly team summary
 - `@Stirlo help` - Show available commands
 
+**Scheduled Triggers (Phase 6)**:
+Standalone scripts for Replit Scheduled Deployments:
+- **Daily Trigger** (`npm run trigger:daily`): Runs 8 AM AEST daily
+  - Sends team summary to #stirlo-assistant
+  - Sends individual DMs to assignees (one per person)
+  - Includes both due-today and overdue tasks
+- **Weekly Trigger** (`npm run trigger:weekly`): Runs 8 AM AEST Monday mornings
+  - Sends weekly overview to #stirlo-assistant
+  - Sends personal weekly outlook DMs to each team member
+
+**Replit Scheduled Deployment Configuration**:
+1. Daily: Cron `0 8 * * *`, Timezone `Australia/Sydney`, Command `npm run trigger:daily`
+2. Weekly: Cron `0 8 * * 1`, Timezone `Australia/Sydney`, Command `npm run trigger:weekly`
+
 **Key Files**:
 - `src/utils/dateUtils.ts` - Australian timezone utilities with DST support
 - `src/database/repositories/*.ts` - Database access layer
@@ -63,6 +77,8 @@ Users can query tasks via @-mentions in any channel:
 - `src/slack/handlers/taskCommandParser.ts` - Command detection and parsing
 - `src/slack/handlers/taskCommandHandler.ts` - Command execution and response formatting
 - `src/slack/messages/*.ts` - Block Kit message formatters
+- `scripts/dailyTrigger.ts` - Daily scheduled notification script
+- `scripts/weeklyTrigger.ts` - Weekly scheduled notification script
 
 ### Slack Integration
 - **Connection**: Socket Mode via `@slack/socket-mode` and `@slack/web-api`
@@ -108,11 +124,13 @@ Messages: id, user_id (FK), role ('user'|'assistant'), content, created_at
 - **Engine**: Inngest v3.40.2+ for durable workflow execution
 - **Workflows**: 
   - `slackIntelligentAssistantWorkflow` - Main message processing pipeline
-  - `dailyTaskMonitoringWorkflow` - Scheduled task notifications (planned)
+- **Scheduled Scripts**: Standalone trigger scripts for Replit Scheduled Deployments
+  - `scripts/dailyTrigger.ts` - Daily notifications at 8 AM AEST
+  - `scripts/weeklyTrigger.ts` - Weekly summaries at 8 AM AEST Mondays
 - **Integration**: `@mastra/inngest` adapter
 - **Execution**: Multi-step execution with automatic retries and error handling
 
-**Rationale**: Inngest provides durable execution with built-in retry logic, making it ideal for long-running agent workflows that may involve multiple API calls.
+**Rationale**: Inngest provides durable execution with built-in retry logic, making it ideal for long-running agent workflows that may involve multiple API calls. Scheduled notifications use standalone scripts with Replit's Scheduled Deployments for reliable cron-like execution.
 
 ### Keep-Alive Service (Render-Specific)
 - **Mechanism**: Self-pinging service hitting `/api/health` every 5 minutes
