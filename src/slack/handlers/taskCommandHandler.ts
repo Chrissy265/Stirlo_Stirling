@@ -234,6 +234,8 @@ async function handleOverdueQuery(
   };
 }
 
+const MAX_SLACK_BLOCKS = 45;
+
 function formatOverdueAlerts(alerts: TaskAlert[]): SlackMessage {
   const blocks: any[] = [
     {
@@ -244,8 +246,15 @@ function formatOverdueAlerts(alerts: TaskAlert[]): SlackMessage {
   ];
   
   const groupedByAssignee = groupBy(alerts, 'assignee');
+  let totalTasksShown = 0;
+  let truncated = false;
   
   for (const [assignee, assigneeAlerts] of Object.entries(groupedByAssignee)) {
+    if (blocks.length >= MAX_SLACK_BLOCKS - 3) {
+      truncated = true;
+      break;
+    }
+    
     const displayName = assignee || 'Unassigned';
     
     blocks.push({
@@ -257,6 +266,11 @@ function formatOverdueAlerts(alerts: TaskAlert[]): SlackMessage {
     });
     
     for (const alert of assigneeAlerts) {
+      if (blocks.length >= MAX_SLACK_BLOCKS - 2) {
+        truncated = true;
+        break;
+      }
+      
       const daysOverdue = Math.floor(
         (Date.now() - alert.dueDate.getTime()) / (1000 * 60 * 60 * 24)
       );
@@ -270,9 +284,24 @@ function formatOverdueAlerts(alerts: TaskAlert[]): SlackMessage {
             `   📁 ${alert.boardName}`
         }
       });
+      totalTasksShown++;
     }
     
+    if (!truncated) {
+      blocks.push({ type: 'divider' });
+    }
+  }
+  
+  if (truncated) {
+    const remaining = alerts.length - totalTasksShown;
     blocks.push({ type: 'divider' });
+    blocks.push({
+      type: 'context',
+      elements: [{
+        type: 'mrkdwn',
+        text: `📋 _...and ${remaining} more overdue task(s). Use \`@Stirlo my overdue\` for your personal list._`
+      }]
+    });
   }
   
   return {

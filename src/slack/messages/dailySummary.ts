@@ -1,10 +1,12 @@
 import { TaskAlert } from '../../types/monitoring';
 import { SlackMessage, SlackBlock } from '../types';
-import { formatShortDate, groupBy, safeString, truncateText } from './utils';
+import { formatShortDate, groupBy, safeString, truncateText, MAX_SLACK_BLOCKS } from './utils';
 import { formatTaskAlertCompact } from './taskAlertMessage';
 
 export function formatDailySummary(alerts: TaskAlert[], date: Date): SlackMessage {
   const blocks: SlackBlock[] = [];
+  let tasksShown = 0;
+  let truncated = false;
 
   blocks.push({
     type: 'header',
@@ -35,11 +37,25 @@ export function formatDailySummary(alerts: TaskAlert[], date: Date): SlackMessag
     const byAssignee = groupBy(alerts, 'assignee');
 
     for (const [assignee, tasks] of Object.entries(byAssignee)) {
+      if (blocks.length >= MAX_SLACK_BLOCKS - 3) {
+        truncated = true;
+        break;
+      }
+      
       const displayName = assignee === 'null' || assignee === 'undefined' 
         ? 'Unassigned' 
         : assignee;
 
-      const taskList = tasks
+      const remainingSlots = MAX_SLACK_BLOCKS - blocks.length - 4;
+      const tasksToShow = tasks.slice(0, remainingSlots);
+      
+      if (tasksToShow.length < tasks.length) {
+        truncated = true;
+      }
+      
+      tasksShown += tasksToShow.length;
+
+      const taskList = tasksToShow
         .map(t => formatTaskAlertCompact(t))
         .join('\n');
 
@@ -52,13 +68,24 @@ export function formatDailySummary(alerts: TaskAlert[], date: Date): SlackMessag
 
   blocks.push({ type: 'divider' });
 
-  blocks.push({
-    type: 'context',
-    elements: [{
-      type: 'mrkdwn',
-      text: '💡 Reply with `@Stirlo my today` to see your personal list'
-    }]
-  });
+  if (truncated) {
+    const remaining = alerts.length - tasksShown;
+    blocks.push({
+      type: 'context',
+      elements: [{
+        type: 'mrkdwn',
+        text: `📋 _...and ${remaining} more task(s). Use \`@Stirlo my today\` for your personal list._`
+      }]
+    });
+  } else {
+    blocks.push({
+      type: 'context',
+      elements: [{
+        type: 'mrkdwn',
+        text: '💡 Reply with `@Stirlo my today` to see your personal list'
+      }]
+    });
+  }
 
   return {
     blocks,
@@ -68,6 +95,8 @@ export function formatDailySummary(alerts: TaskAlert[], date: Date): SlackMessag
 
 export function formatOverdueSummary(alerts: TaskAlert[]): SlackMessage {
   const blocks: SlackBlock[] = [];
+  let tasksShown = 0;
+  let truncated = false;
 
   blocks.push({
     type: 'header',
@@ -90,11 +119,25 @@ export function formatOverdueSummary(alerts: TaskAlert[]): SlackMessage {
     const byAssignee = groupBy(alerts, 'assignee');
 
     for (const [assignee, tasks] of Object.entries(byAssignee)) {
+      if (blocks.length >= MAX_SLACK_BLOCKS - 3) {
+        truncated = true;
+        break;
+      }
+      
       const displayName = assignee === 'null' || assignee === 'undefined' 
         ? 'Unassigned' 
         : assignee;
 
-      const taskList = tasks
+      const remainingSlots = MAX_SLACK_BLOCKS - blocks.length - 4;
+      const tasksToShow = tasks.slice(0, Math.max(1, remainingSlots));
+      
+      if (tasksToShow.length < tasks.length) {
+        truncated = true;
+      }
+      
+      tasksShown += tasksToShow.length;
+
+      const taskList = tasksToShow
         .map(t => {
           const daysOverdue = Math.floor((Date.now() - t.dueDate.getTime()) / (1000 * 60 * 60 * 24));
           const overdueText = daysOverdue === 1 ? '1 day' : `${daysOverdue} days`;
@@ -106,6 +149,17 @@ export function formatOverdueSummary(alerts: TaskAlert[]): SlackMessage {
       blocks.push({
         type: 'section',
         text: { type: 'mrkdwn', text: `*${displayName}:*\n${taskList}` }
+      });
+    }
+    
+    if (truncated) {
+      const remaining = alerts.length - tasksShown;
+      blocks.push({
+        type: 'context',
+        elements: [{
+          type: 'mrkdwn',
+          text: `📋 _...and ${remaining} more overdue task(s). Use \`@Stirlo my overdue\` for your personal list._`
+        }]
       });
     }
   }

@@ -1,5 +1,7 @@
 import { TaskAlert } from '../../types/monitoring';
 
+export const MAX_SLACK_BLOCKS = 45;
+
 export function getUrgencyEmoji(alert: TaskAlert): string {
   if (alert.alertType === 'overdue') return '🚨';
   if (alert.alertType === 'due_today') return '⚠️';

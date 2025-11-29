@@ -1,6 +1,6 @@
 import { TaskAlert } from '../../types/monitoring';
 import { SlackMessage, SlackBlock, SlackButtonElement } from '../types';
-import { formatShortDate, formatDayName, sortByDueDate, safeString, getPriorityEmoji } from './utils';
+import { formatShortDate, formatDayName, sortByDueDate, safeString, getPriorityEmoji, MAX_SLACK_BLOCKS } from './utils';
 
 export function formatPersonalWeeklySummary(
   alerts: TaskAlert[], 
@@ -8,6 +8,7 @@ export function formatPersonalWeeklySummary(
   slackUserId?: string
 ): SlackMessage {
   const blocks: SlackBlock[] = [];
+  let truncated = false;
 
   const filteredAlerts = slackUserId 
     ? alerts.filter(a => a.assigneeSlackId === slackUserId)
@@ -36,8 +37,14 @@ export function formatPersonalWeeklySummary(
     });
 
     const sorted = sortByDueDate(filteredAlerts);
+    let tasksShown = 0;
 
     for (const alert of sorted) {
+      if (blocks.length >= MAX_SLACK_BLOCKS - 3) {
+        truncated = true;
+        break;
+      }
+      
       const dayName = formatDayName(alert.dueDate);
       const priorityEmoji = getPriorityEmoji(alert.priority);
       
@@ -56,18 +63,32 @@ export function formatPersonalWeeklySummary(
         },
         accessory
       });
+      tasksShown++;
+    }
+    
+    if (truncated) {
+      const remaining = filteredAlerts.length - tasksShown;
+      blocks.push({
+        type: 'context',
+        elements: [{
+          type: 'mrkdwn',
+          text: `📋 _...and ${remaining} more task(s) this week._`
+        }]
+      });
     }
   }
 
   blocks.push({ type: 'divider' });
 
-  blocks.push({
-    type: 'context',
-    elements: [{
-      type: 'mrkdwn',
-      text: '💡 Use `@Stirlo my today` to focus on just today\'s tasks'
-    }]
-  });
+  if (!truncated) {
+    blocks.push({
+      type: 'context',
+      elements: [{
+        type: 'mrkdwn',
+        text: '💡 Use `@Stirlo my today` to focus on just today\'s tasks'
+      }]
+    });
+  }
 
   return {
     blocks,
@@ -81,6 +102,7 @@ export function formatPersonalDailySummary(
   slackUserId?: string
 ): SlackMessage {
   const blocks: SlackBlock[] = [];
+  let truncated = false;
 
   const filteredAlerts = slackUserId 
     ? alerts.filter(a => a.assigneeSlackId === slackUserId)
@@ -114,8 +136,14 @@ export function formatPersonalDailySummary(
     blocks.push({ type: 'divider' });
 
     const sorted = sortByDueDate(filteredAlerts);
+    let tasksShown = 0;
 
     for (const alert of sorted) {
+      if (blocks.length >= MAX_SLACK_BLOCKS - 2) {
+        truncated = true;
+        break;
+      }
+      
       const isOverdue = alert.alertType === 'overdue';
       const emoji = isOverdue ? '🚨' : '📋';
       
@@ -137,6 +165,18 @@ export function formatPersonalDailySummary(
           text: `${emoji} *${alert.taskName}*${overdueNote}\n  Board: ${safeString(alert.boardName)} | Status: ${safeString(alert.status)}`
         },
         accessory
+      });
+      tasksShown++;
+    }
+    
+    if (truncated) {
+      const remaining = filteredAlerts.length - tasksShown;
+      blocks.push({
+        type: 'context',
+        elements: [{
+          type: 'mrkdwn',
+          text: `📋 _...and ${remaining} more task(s) today._`
+        }]
       });
     }
   }
