@@ -8,7 +8,9 @@
     "build": "mastra build",
     "check": "tsc",
     "check:format": "prettier --check '**/*.ts'",
-    "format": "prettier --write '**/*.ts'"
+    "format": "prettier --write '**/*.ts'",
+    "trigger:daily": "tsx scripts/dailyTrigger.ts",
+    "trigger:weekly": "tsx scripts/weeklyTrigger.ts"
   },
   "keywords": [],
   "type": "module",

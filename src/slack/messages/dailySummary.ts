@@ -56,7 +56,7 @@ export function formatDailySummary(alerts: TaskAlert[], date: Date): SlackMessag
     type: 'context',
     elements: [{
       type: 'mrkdwn',
-      text: '💡 Reply with `/stirlo-tasks my today` to see your personal list'
+      text: '💡 Reply with `@Stirlo my today` to see your personal list'
     }]
   });
 

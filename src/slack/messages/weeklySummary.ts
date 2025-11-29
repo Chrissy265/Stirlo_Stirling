@@ -75,7 +75,7 @@ export function formatWeeklySummary(alerts: TaskAlert[], weekStart: Date): Slack
     type: 'context',
     elements: [{
       type: 'mrkdwn',
-      text: '💡 Use `/stirlo-tasks my week` to see your personal weekly view'
+      text: '💡 Use `@Stirlo my week` to see your personal weekly view'
     }]
   });
 

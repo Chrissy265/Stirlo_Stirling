@@ -65,7 +65,7 @@ export function formatPersonalWeeklySummary(
     type: 'context',
     elements: [{
       type: 'mrkdwn',
-      text: '💡 Use `/stirlo-tasks my today` to focus on just today\'s tasks'
+      text: '💡 Use `@Stirlo my today` to focus on just today\'s tasks'
     }]
   });
 

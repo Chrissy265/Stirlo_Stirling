@@ -84,3 +84,4 @@ outputType = "automations"
 
 [userenv.shared]
 TEAM_CHANNEL_ID = "C09PHGX6YDU"
+ERROR_CHANNEL_ID = "C0A0AFTQDGB"
