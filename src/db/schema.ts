@@ -59,6 +59,18 @@ export const taskAlerts = pgTable('task_alerts', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
+// Task snoozes for deferred notifications
+export const taskSnoozes = pgTable('task_snoozes', {
+  id: serial('id').primaryKey(),
+  alertId: varchar('alert_id', { length: 100 }).notNull(),
+  taskId: varchar('task_id', { length: 50 }).notNull(),
+  userId: varchar('user_id', { length: 50 }).notNull(),
+  snoozeUntil: timestamp('snooze_until', { withTimezone: true }).notNull(),
+  duration: varchar('duration', { length: 20 }).notNull(),
+  processed: boolean('processed').default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
 // Query log for visibility (track what team members ask)
 export const queryLog = pgTable('query_log', {
   id: serial('id').primaryKey(),

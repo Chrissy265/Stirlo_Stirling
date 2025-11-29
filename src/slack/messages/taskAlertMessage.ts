@@ -71,14 +71,14 @@ export function formatTaskAlert(alert: TaskAlert): SlackMessage {
     text: { type: 'plain_text', text: '✅ Mark Complete', emoji: true },
     style: 'primary',
     action_id: 'complete_task',
-    value: JSON.stringify({ taskId: alert.taskId, boardId: alert.boardId })
+    value: JSON.stringify({ taskId: alert.taskId, boardId: alert.boardId, taskName: alert.taskName })
   });
 
   actionElements.push({
     type: 'button',
     text: { type: 'plain_text', text: '⏰ Snooze', emoji: true },
     action_id: 'snooze_task',
-    value: JSON.stringify({ alertId: alert.id, taskId: alert.taskId, taskName: alert.taskName })
+    value: JSON.stringify({ alertId: alert.id, taskId: alert.taskId, taskName: alert.taskName, boardId: alert.boardId })
   });
 
   blocks.push({

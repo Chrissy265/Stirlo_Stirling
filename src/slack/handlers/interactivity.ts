@@ -1,10 +1,25 @@
 import { WebClient } from '@slack/web-api';
 import { SlackInteractionPayload, SlackModalView, SlackMessage } from '../types';
 import { MondayClient } from '../../monday/client';
+import { AlertRepository } from '../../database/repositories/alertRepository';
 
 interface InteractivityContext {
   slackClient: WebClient;
   mondayClient: MondayClient;
+  alertRepository?: AlertRepository;
+}
+
+interface CompleteTaskPayload {
+  taskId: string;
+  boardId: string | null;
+  taskName?: string;
+}
+
+interface SnoozeTaskPayload {
+  alertId: string;
+  taskId: string;
+  taskName: string;
+  boardId?: string | null;
 }
 
 export async function handleInteraction(
@@ -51,69 +66,67 @@ async function handleCompleteTask(
   console.log(`✅ [Interactivity] Processing complete task action`);
 
   if (!action.value) {
-    console.error('❌ [Interactivity] No value in complete_task action');
+    await sendErrorResponse(payload.response_url, 'No task data provided');
     return;
   }
 
-  let taskData: { taskId: string; boardId: string | null };
+  let taskData: CompleteTaskPayload;
   try {
     taskData = JSON.parse(action.value);
   } catch (e) {
     console.error('❌ [Interactivity] Failed to parse action value:', action.value);
+    await sendErrorResponse(payload.response_url, 'Invalid task data');
     return;
   }
 
-  const { taskId, boardId } = taskData;
+  const { taskId, boardId, taskName } = taskData;
 
   if (!taskId) {
-    console.error('❌ [Interactivity] Missing taskId in action value');
+    await sendErrorResponse(payload.response_url, 'Missing task ID');
+    return;
+  }
+
+  if (!boardId) {
+    await sendErrorResponse(payload.response_url, 'Cannot update task: missing board information');
     return;
   }
 
   try {
-    console.log(`📝 [Interactivity] Updating task ${taskId} to complete status`);
+    console.log(`📝 [Interactivity] Updating task ${taskId} on board ${boardId}`);
     
-    const statusColumnId = await findStatusColumn(taskId, boardId, context.mondayClient);
+    const { statusColumnId, statusValue } = await findStatusColumnAndValue(boardId, context.mondayClient);
     
-    if (statusColumnId) {
-      await context.mondayClient.changeColumnValue(
-        boardId!,
-        taskId,
-        statusColumnId,
-        JSON.stringify({ label: 'Done' })
+    if (!statusColumnId) {
+      console.warn(`⚠️ [Interactivity] No status column found for board ${boardId}`);
+      await sendErrorResponse(
+        payload.response_url, 
+        'Could not find status column on this board. Please mark complete in Monday.com directly.'
       );
-      console.log(`✅ [Interactivity] Task ${taskId} marked as complete in Monday.com`);
-    } else {
-      console.warn(`⚠️ [Interactivity] Could not find status column for task ${taskId}`);
+      return;
     }
 
-    if (payload.response_url) {
-      await sendResponseMessage(payload.response_url, {
-        blocks: [{
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `✅ Task marked as complete by <@${payload.user.id}>`
-          }
-        }],
-        text: 'Task marked as complete'
-      });
+    const success = await context.mondayClient.changeColumnValue(
+      boardId,
+      taskId,
+      statusColumnId,
+      statusValue
+    );
+
+    if (success) {
+      console.log(`✅ [Interactivity] Task ${taskId} marked as complete in Monday.com`);
+      await sendSuccessResponse(
+        payload.response_url,
+        `✅ Task "${taskName || taskId}" marked as complete by <@${payload.user.id}>`
+      );
+    } else {
+      await sendErrorResponse(
+        payload.response_url,
+        'Failed to update task in Monday.com. Please try again or update directly.'
+      );
     }
   } catch (error: any) {
     console.error(`❌ [Interactivity] Failed to complete task: ${error.message}`);
-    
-    if (payload.response_url) {
-      await sendResponseMessage(payload.response_url, {
-        blocks: [{
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `❌ Failed to mark task as complete: ${error.message}`
-          }
-        }],
-        text: 'Failed to complete task'
-      });
-    }
+    await sendErrorResponse(payload.response_url, `Error: ${error.message}`);
   }
 }
 
@@ -129,7 +142,7 @@ async function handleSnoozeTask(
     return;
   }
 
-  let taskData: { alertId: string; taskId: string; taskName: string };
+  let taskData: SnoozeTaskPayload;
   try {
     taskData = JSON.parse(action.value);
   } catch (e) {
@@ -143,7 +156,10 @@ async function handleSnoozeTask(
     title: { type: 'plain_text', text: 'Snooze Task' },
     submit: { type: 'plain_text', text: 'Snooze' },
     close: { type: 'plain_text', text: 'Cancel' },
-    private_metadata: action.value,
+    private_metadata: JSON.stringify({
+      ...taskData,
+      userId: payload.user.id
+    }),
     blocks: [
       {
         type: 'section',
@@ -212,7 +228,7 @@ async function handleSnoozeSubmission(
     return;
   }
 
-  let taskData: { alertId: string; taskId: string; taskName: string };
+  let taskData: SnoozeTaskPayload & { userId?: string };
   try {
     taskData = JSON.parse(payload.view.private_metadata);
   } catch (e) {
@@ -221,12 +237,26 @@ async function handleSnoozeSubmission(
   }
 
   const snoozeUntil = calculateSnoozeTime(snoozeDuration);
+  const userId = taskData.userId || payload.user.id;
   
   console.log(`⏰ [Interactivity] Task ${taskData.taskId} snoozed until ${snoozeUntil.toISOString()}`);
 
   try {
+    if (context.alertRepository && taskData.alertId) {
+      await context.alertRepository.createSnooze({
+        alertId: taskData.alertId,
+        taskId: taskData.taskId,
+        userId: userId,
+        snoozeUntil: snoozeUntil,
+        duration: snoozeDuration
+      });
+      console.log(`✅ [Interactivity] Snooze persisted for alert ${taskData.alertId}`);
+    } else {
+      console.log(`⚠️ [Interactivity] No alert repository available, snooze not persisted`);
+    }
+
     await context.slackClient.chat.postMessage({
-      channel: payload.user.id,
+      channel: userId,
       text: `⏰ Task "${taskData.taskName}" has been snoozed. I'll remind you again ${formatSnoozeMessage(snoozeDuration)}.`,
       blocks: [{
         type: 'section',
@@ -236,9 +266,9 @@ async function handleSnoozeSubmission(
         }
       }]
     });
-    console.log(`✅ [Interactivity] Snooze confirmation sent`);
+    console.log(`✅ [Interactivity] Snooze confirmation sent to user ${userId}`);
   } catch (error: any) {
-    console.error(`❌ [Interactivity] Failed to send snooze confirmation: ${error.message}`);
+    console.error(`❌ [Interactivity] Failed to process snooze: ${error.message}`);
   }
 }
 
@@ -277,30 +307,66 @@ function formatSnoozeMessage(duration: string): string {
   }
 }
 
-async function findStatusColumn(
-  taskId: string,
-  boardId: string | null,
+async function findStatusColumnAndValue(
+  boardId: string,
   mondayClient: MondayClient
-): Promise<string | null> {
-  if (!boardId) {
-    console.warn('⚠️ [Interactivity] No boardId provided, cannot find status column');
-    return null;
-  }
-
+): Promise<{ statusColumnId: string | null; statusValue: string }> {
   try {
     const boardInfo = await mondayClient.getBoardById(boardId);
     
-    if (boardInfo?.columns) {
-      const statusColumn = boardInfo.columns.find(
-        (col: any) => col.type === 'status' || col.id === 'status'
-      );
-      return statusColumn?.id || null;
+    if (!boardInfo?.columns) {
+      console.warn(`⚠️ [Interactivity] No columns found for board ${boardId}`);
+      return { statusColumnId: null, statusValue: '' };
     }
+
+    const statusColumn = boardInfo.columns.find(
+      (col: any) => col.type === 'status'
+    );
+
+    if (!statusColumn) {
+      const statusById = boardInfo.columns.find((col: any) => col.id === 'status');
+      if (statusById) {
+        return { 
+          statusColumnId: statusById.id, 
+          statusValue: JSON.stringify({ label: 'Done' })
+        };
+      }
+      return { statusColumnId: null, statusValue: '' };
+    }
+
+    return { 
+      statusColumnId: statusColumn.id, 
+      statusValue: JSON.stringify({ label: 'Done' })
+    };
   } catch (error: any) {
     console.error(`❌ [Interactivity] Failed to get board info: ${error.message}`);
+    return { statusColumnId: null, statusValue: '' };
   }
+}
 
-  return null;
+async function sendSuccessResponse(responseUrl: string | undefined, message: string): Promise<void> {
+  if (!responseUrl) return;
+  await sendResponseMessage(responseUrl, {
+    blocks: [{
+      type: 'section',
+      text: { type: 'mrkdwn', text: message }
+    }],
+    text: message
+  });
+}
+
+async function sendErrorResponse(responseUrl: string | undefined, error: string): Promise<void> {
+  if (!responseUrl) {
+    console.error(`❌ [Interactivity] Error (no response URL): ${error}`);
+    return;
+  }
+  await sendResponseMessage(responseUrl, {
+    blocks: [{
+      type: 'section',
+      text: { type: 'mrkdwn', text: `❌ ${error}` }
+    }],
+    text: `Error: ${error}`
+  });
 }
 
 async function sendResponseMessage(responseUrl: string, message: SlackMessage): Promise<void> {

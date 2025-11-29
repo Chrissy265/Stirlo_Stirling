@@ -1,7 +1,15 @@
 import { eq, isNull, and, gte, lte, sql } from 'drizzle-orm';
 import { db } from '../../db/index.js';
-import { taskAlerts } from '../../db/schema.js';
+import { taskAlerts, taskSnoozes } from '../../db/schema.js';
 import type { TaskAlert, DocumentLink } from '../../types/monitoring.js';
+
+interface SnoozeInput {
+  alertId: string;
+  taskId: string;
+  userId: string;
+  snoozeUntil: Date;
+  duration: string;
+}
 
 export class AlertRepository {
   async createMany(alerts: TaskAlert[]): Promise<void> {
@@ -99,6 +107,43 @@ export class AlertRepository {
       .where(lte(taskAlerts.createdAt, beforeDate));
 
     return result.rowCount || 0;
+  }
+
+  async createSnooze(input: SnoozeInput): Promise<void> {
+    await db.insert(taskSnoozes).values({
+      alertId: input.alertId,
+      taskId: input.taskId,
+      userId: input.userId,
+      snoozeUntil: input.snoozeUntil,
+      duration: input.duration,
+      processed: false,
+    });
+    console.log(`✅ [AlertRepository] Snooze created for alert ${input.alertId} until ${input.snoozeUntil.toISOString()}`);
+  }
+
+  async getSnoozesToProcess(): Promise<Array<{ alertId: string; taskId: string; userId: string }>> {
+    const now = new Date();
+    const results = await db
+      .select({
+        alertId: taskSnoozes.alertId,
+        taskId: taskSnoozes.taskId,
+        userId: taskSnoozes.userId,
+      })
+      .from(taskSnoozes)
+      .where(
+        and(
+          lte(taskSnoozes.snoozeUntil, now),
+          eq(taskSnoozes.processed, false)
+        )
+      );
+    return results;
+  }
+
+  async markSnoozeProcessed(alertId: string): Promise<void> {
+    await db
+      .update(taskSnoozes)
+      .set({ processed: true })
+      .where(eq(taskSnoozes.alertId, alertId));
   }
 
   private mapToTaskAlert(row: typeof taskAlerts.$inferSelect): TaskAlert {
