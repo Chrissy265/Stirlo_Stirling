@@ -1,0 +1,1 @@
+export { handleInteraction } from './interactivity';

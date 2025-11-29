@@ -145,4 +145,63 @@ export class MondayClient {
   private formatDateForApi(date: Date): string {
     return date.toISOString().split('T')[0];
   }
+
+  async getBoardById(boardId: string): Promise<MondayBoard | null> {
+    try {
+      const query = `
+        query GetBoard($boardId: ID!) {
+          boards(ids: [$boardId]) {
+            id
+            name
+            columns {
+              id
+              title
+              type
+            }
+          }
+        }
+      `;
+      
+      const data = await this.query<{ boards: MondayBoard[] }>(query, { boardId });
+      return data.boards?.[0] || null;
+    } catch (error: any) {
+      console.error(`❌ [MondayClient] getBoardById error: ${error.message}`);
+      return null;
+    }
+  }
+
+  async changeColumnValue(
+    boardId: string,
+    itemId: string,
+    columnId: string,
+    value: string
+  ): Promise<boolean> {
+    try {
+      const mutation = `
+        mutation ChangeColumnValue($boardId: ID!, $itemId: ID!, $columnId: String!, $value: JSON!) {
+          change_column_value(
+            board_id: $boardId
+            item_id: $itemId
+            column_id: $columnId
+            value: $value
+          ) {
+            id
+          }
+        }
+      `;
+
+      await this.query(mutation, {
+        boardId,
+        itemId,
+        columnId,
+        value
+      });
+
+      console.log(`✅ [MondayClient] Updated column ${columnId} for item ${itemId}`);
+      return true;
+    } catch (error: any) {
+      console.error(`❌ [MondayClient] changeColumnValue error: ${error.message}`);
+      return false;
+    }
+  }
 }
