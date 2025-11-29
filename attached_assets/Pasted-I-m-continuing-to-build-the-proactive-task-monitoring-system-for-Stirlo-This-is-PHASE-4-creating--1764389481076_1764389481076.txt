@@ -1,0 +1,338 @@
+I'm continuing to build the proactive task monitoring system for Stirlo. This is PHASE 4 - creating Slack message formatters. Phases 1-3 are complete (database, Monday.com integration, task monitoring service).
+
+## Context
+- The TaskMonitor service can now generate TaskAlert objects
+- We need to format these alerts as rich Slack messages
+- Messages should include task details, documents, and action buttons
+
+## What to Create
+
+### 1. Task Alert Message Formatter
+**File: src/slack/messages/taskAlertMessage.ts**
+```typescript
+import { TaskAlert } from '../../types/monitoring';
+
+export function formatTaskAlert(alert: TaskAlert): SlackMessage {
+  const blocks = [];
+  
+  // 1. Header with urgency emoji
+  // 🚨 for overdue, ⚠️ for due today, 📌 for high priority, 📋 for normal
+  blocks.push({
+    type: 'header',
+    text: { type: 'plain_text', text: `${getUrgencyEmoji(alert)} ${alert.taskName}` }
+  });
+  
+  // 2. Task details in fields
+  blocks.push({
+    type: 'section',
+    fields: [
+      { type: 'mrkdwn', text: `*Board:*\n${alert.boardName}` },
+      { type: 'mrkdwn', text: `*Workspace:*\n${alert.workspaceName}` },
+      { type: 'mrkdwn', text: `*Due:*\n${formatDate(alert.dueDate)}` },
+      { type: 'mrkdwn', text: `*Status:*\n${alert.status}` },
+      { type: 'mrkdwn', text: `*Assigned to:*\n${alert.assignee}` },
+      { type: 'mrkdwn', text: `*Group:*\n${alert.groupName}` }
+    ]
+  });
+  
+  // 3. Contextual message (if any)
+  if (alert.contextualMessage) {
+    blocks.push({ type: 'divider' });
+    blocks.push({
+      type: 'section',
+      text: { type: 'mrkdwn', text: alert.contextualMessage }
+    });
+  }
+  
+  // 4. Related documents (if any)
+  if (alert.relatedDocuments.length > 0) {
+    blocks.push({ type: 'divider' });
+    blocks.push({
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: '*📎 Related Documents:*\n' + 
+          alert.relatedDocuments
+            .map(doc => `• <${doc.url}|${doc.name}> _(${doc.fileType} - ${doc.source})_`)
+            .join('\n')
+      }
+    });
+  }
+  
+  // 5. Action buttons
+  blocks.push({
+    type: 'actions',
+    elements: [
+      {
+        type: 'button',
+        text: { type: 'plain_text', text: '📋 View in Monday.com' },
+        url: alert.taskUrl,
+        action_id: 'view_task_monday'
+      },
+      {
+        type: 'button',
+        text: { type: 'plain_text', text: '✅ Mark Complete' },
+        style: 'primary',
+        action_id: `complete_task_${alert.taskId}`
+      },
+      {
+        type: 'button',
+        text: { type: 'plain_text', text: '⏰ Snooze' },
+        action_id: `snooze_task_${alert.taskId}`
+      }
+    ]
+  });
+  
+  return { blocks };
+}
+
+function getUrgencyEmoji(alert: TaskAlert): string {
+  if (alert.alertType === 'overdue') return '🚨';
+  if (alert.alertType === 'due_today') return '⚠️';
+  if (alert.priority === 'high') return '📌';
+  return '📋';
+}
+
+function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-AU', {
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
+  }).format(date);
+}
+```
+
+### 2. Daily Summary Formatter
+**File: src/slack/messages/dailySummary.ts**
+```typescript
+export function formatDailySummary(alerts: TaskAlert[], date: Date): SlackMessage {
+  const blocks = [];
+  
+  // Header
+  blocks.push({
+    type: 'header',
+    text: { type: 'plain_text', text: `📅 Tasks Due Today - ${formatShortDate(date)}` }
+  });
+  
+  // Count summary
+  const overdueCount = alerts.filter(a => a.alertType === 'overdue').length;
+  blocks.push({
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: `*${alerts.length} task(s)* requiring attention` +
+        (overdueCount > 0 ? ` _(${overdueCount} overdue)_` : '')
+    }
+  });
+  
+  blocks.push({ type: 'divider' });
+  
+  // Group by assignee
+  const byAssignee = groupBy(alerts, 'assignee');
+  
+  for (const [assignee, tasks] of Object.entries(byAssignee)) {
+    const taskList = tasks
+      .map(t => {
+        const emoji = t.alertType === 'overdue' ? '🚨' : '•';
+        const docCount = t.relatedDocuments.length;
+        const docIndicator = docCount > 0 ? ` 📎${docCount}` : '';
+        return `${emoji} <${t.taskUrl}|${t.taskName}>${docIndicator} _(${t.boardName})_`;
+      })
+      .join('\n');
+    
+    blocks.push({
+      type: 'section',
+      text: { type: 'mrkdwn', text: `*${assignee}:*\n${taskList}` }
+    });
+  }
+  
+  // Footer
+  blocks.push({ type: 'divider' });
+  blocks.push({
+    type: 'context',
+    elements: [{
+      type: 'mrkdwn',
+      text: '💡 Reply with `/stirlo-tasks my today` to see your personal list'
+    }]
+  });
+  
+  return { blocks };
+}
+```
+
+### 3. Weekly Summary Formatter
+**File: src/slack/messages/weeklySummary.ts**
+```typescript
+export function formatWeeklySummary(alerts: TaskAlert[], weekStart: Date): SlackMessage {
+  const blocks = [];
+  
+  // Header with date range
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  
+  blocks.push({
+    type: 'header',
+    text: { type: 'plain_text', text: '📆 Weekly Task Overview' }
+  });
+  
+  blocks.push({
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: `*Week of ${formatShortDate(weekStart)} - ${formatShortDate(weekEnd)}*\n${alerts.length} task(s) due this week`
+    }
+  });
+  
+  blocks.push({ type: 'divider' });
+  
+  // Group by day of week
+  const byDay = groupByDay(alerts);
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  
+  for (const day of days) {
+    const dayTasks = byDay[day];
+    if (!dayTasks || dayTasks.length === 0) continue;
+    
+    const taskList = dayTasks
+      .map(t => {
+        const priorityEmoji = t.priority === 'high' ? '🔴' : t.priority === 'medium' ? '🟡' : '⚪';
+        return `${priorityEmoji} <${t.taskUrl}|${t.taskName}> - ${t.assignee}`;
+      })
+      .join('\n');
+    
+    blocks.push({
+      type: 'section',
+      text: { type: 'mrkdwn', text: `*${day}:*\n${taskList}` }
+    });
+  }
+  
+  // Team workload summary
+  blocks.push({ type: 'divider' });
+  
+  const byAssignee = groupBy(alerts, 'assignee');
+  const workloadSummary = Object.entries(byAssignee)
+    .map(([assignee, tasks]) => `• ${assignee}: ${tasks.length} task(s)`)
+    .join('\n');
+  
+  blocks.push({
+    type: 'section',
+    text: { type: 'mrkdwn', text: `*Team Workload:*\n${workloadSummary}` }
+  });
+  
+  return { blocks };
+}
+
+function groupByDay(alerts: TaskAlert[]): Record<string, TaskAlert[]> {
+  const result: Record<string, TaskAlert[]> = {};
+  for (const alert of alerts) {
+    const dayName = new Intl.DateTimeFormat('en-AU', { weekday: 'long' }).format(alert.dueDate);
+    if (!result[dayName]) result[dayName] = [];
+    result[dayName].push(alert);
+  }
+  return result;
+}
+```
+
+### 4. Personal Weekly Summary
+**File: src/slack/messages/personalWeekly.ts**
+```typescript
+export function formatPersonalWeeklySummary(alerts: TaskAlert[], weekStart: Date): SlackMessage {
+  const blocks = [];
+  
+  blocks.push({
+    type: 'header',
+    text: { type: 'plain_text', text: '🗓️ Your Week Ahead' }
+  });
+  
+  blocks.push({
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: `You have *${alerts.length} task(s)* due this week:`
+    }
+  });
+  
+  // Sort by due date
+  const sorted = [...alerts].sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+  
+  for (const alert of sorted) {
+    const dayName = new Intl.DateTimeFormat('en-AU', { weekday: 'long' }).format(alert.dueDate);
+    
+    blocks.push({
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `• *${alert.taskName}*\n  Due: ${dayName}, ${formatShortDate(alert.dueDate)} | Board: ${alert.boardName}`
+      },
+      accessory: {
+        type: 'button',
+        text: { type: 'plain_text', text: 'View' },
+        url: alert.taskUrl
+      }
+    });
+  }
+  
+  return { blocks };
+}
+```
+
+### 5. Tasks Help Message
+**File: src/slack/messages/tasksHelp.ts**
+```typescript
+export function formatTasksHelp(): SlackMessage {
+  return {
+    blocks: [
+      {
+        type: 'header',
+        text: { type: 'plain_text', text: '📋 Stirlo Task Commands' }
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: '*View Tasks (Team-wide):*\n' +
+            '• `/stirlo-tasks today` - Show all tasks due today\n' +
+            '• `/stirlo-tasks week` - Show all tasks due this week\n' +
+            '• `/stirlo-tasks overdue` - Show all overdue tasks'
+        }
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: '*View Your Tasks Only:*\n' +
+            '• `/stirlo-tasks my today` - Show YOUR tasks due today\n' +
+            '• `/stirlo-tasks my week` - Show YOUR tasks due this week\n' +
+            '• `/stirlo-tasks my overdue` - Show YOUR overdue tasks'
+        }
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: '*Manual Triggers (Admin Only):*\n' +
+            '• `/stirlo-tasks trigger daily` - Run daily notifications\n' +
+            '• `/stirlo-tasks trigger weekly` - Run weekly notifications'
+        }
+      },
+      {
+        type: 'context',
+        elements: [{
+          type: 'mrkdwn',
+          text: '💡 You can also DM Stirlo: "show my tasks for today"'
+        }]
+      }
+    ]
+  };
+}
+```
+
+## Do NOT Touch
+- Existing Slack handlers (next phase)
+- Existing message formatters for other features
+- Main app entry point
+
+## Success Criteria
+- [ ] All formatters create valid Slack Block Kit messages
+- [ ] Urgency is visually indicated with emojis
+- [ ] Documents are shown with clickable links
+- [ ] Action buttons have correct action_ids
+- [ ] Messages are formatted for Australian locale
