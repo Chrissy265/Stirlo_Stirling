@@ -375,6 +375,10 @@ export class MondayWorkspaceManager {
     return this.userCache.get(userId);
   }
 
+  getAllCachedUsers(): MondayUser[] {
+    return Array.from(this.userCache.values());
+  }
+
   isInitialized(): boolean {
     return this.initialized;
   }
