@@ -1,0 +1,285 @@
+I'm continuing to build the proactive task monitoring system for Stirlo. This is PHASE 5 - adding Slack command handlers for on-demand task queries. Phases 1-4 are complete.
+
+## Context
+- TaskMonitor service is ready with processDailyTasks(), processWeeklyTasks(), getTasksOnDemand()
+- Message formatters are ready
+- Now we need to wire up Slack commands so users can query tasks
+
+## What to Create
+
+### 1. Task Command Handler
+**File: src/slack/handlers/taskCommandHandler.ts**
+```typescript
+import { TaskMonitor } from '../../services/taskMonitor';
+import { SlackNotifier } from '../notifier';
+import { formatDailySummary } from '../messages/dailySummary';
+import { formatWeeklySummary } from '../messages/weeklySummary';
+import { formatTaskAlert } from '../messages/taskAlertMessage';
+import { formatTasksHelp } from '../messages/tasksHelp';
+import { formatPersonalWeeklySummary } from '../messages/personalWeekly';
+import { getAustralianDate, getStartOfWeek } from '../../utils/dateUtils';
+
+/**
+ * Handle /stirlo-tasks command
+ * 
+ * Usage:
+ *   /stirlo-tasks today          - Show tasks due today (team)
+ *   /stirlo-tasks week           - Show tasks due this week (team)
+ *   /stirlo-tasks overdue        - Show overdue tasks
+ *   /stirlo-tasks my today       - Show MY tasks due today
+ *   /stirlo-tasks my week        - Show MY tasks due this week
+ *   /stirlo-tasks trigger daily  - Manually trigger daily notifications (admin)
+ *   /stirlo-tasks trigger weekly - Manually trigger weekly notifications (admin)
+ *   /stirlo-tasks help           - Show help
+ */
+export async function handleTasksCommand(
+  command: any,
+  ack: () => Promise<void>,
+  respond: (msg: any) => Promise<void>,
+  taskMonitor: TaskMonitor,
+  slackNotifier: SlackNotifier
+): Promise<void> {
+  await ack();
+  
+  const args = command.text.trim().toLowerCase().split(/\s+/);
+  const userId = command.user_id;
+  
+  // Log the query
+  await taskMonitor.logQuery(userId, `/stirlo-tasks ${command.text}`, command.channel_id, 0);
+  
+  try {
+    const isPersonal = args[0] === 'my';
+    const commandArg = isPersonal ? args[1] : args[0];
+    
+    switch (commandArg) {
+      case 'today':
+      case 'daily':
+        await handleTodayQuery(respond, taskMonitor, isPersonal ? userId : undefined);
+        break;
+        
+      case 'week':
+      case 'weekly':
+        await handleWeekQuery(respond, taskMonitor, isPersonal ? userId : undefined);
+        break;
+        
+      case 'overdue':
+        await handleOverdueQuery(respond, taskMonitor, isPersonal ? userId : undefined);
+        break;
+        
+      case 'trigger':
+        await handleManualTrigger(respond, taskMonitor, slackNotifier, args[1], userId);
+        break;
+        
+      case 'help':
+      default:
+        await respond({ response_type: 'ephemeral', ...formatTasksHelp() });
+        break;
+    }
+  } catch (error) {
+    console.error('Task command error:', error);
+    await respond({
+      response_type: 'ephemeral',
+      text: `❌ Error: ${error instanceof Error ? error.message : 'Something went wrong'}`
+    });
+  }
+}
+
+async function handleTodayQuery(
+  respond: Function,
+  taskMonitor: TaskMonitor,
+  filterByUserId?: string
+): Promise<void> {
+  await respond({ response_type: 'ephemeral', text: '🔍 Fetching tasks due today...' });
+  
+  const alerts = await taskMonitor.getTasksOnDemand('today', filterByUserId);
+  
+  if (alerts.length === 0) {
+    await respond({
+      response_type: 'ephemeral',
+      text: filterByUserId ? '✅ You have no tasks due today!' : '✅ No tasks due today.'
+    });
+    return;
+  }
+  
+  const summary = formatDailySummary(alerts, getAustralianDate());
+  await respond({
+    response_type: filterByUserId ? 'ephemeral' : 'in_channel',
+    ...summary
+  });
+}
+
+async function handleWeekQuery(
+  respond: Function,
+  taskMonitor: TaskMonitor,
+  filterByUserId?: string
+): Promise<void> {
+  await respond({ response_type: 'ephemeral', text: '🔍 Fetching tasks for this week...' });
+  
+  const alerts = await taskMonitor.getTasksOnDemand('week', filterByUserId);
+  
+  if (alerts.length === 0) {
+    await respond({
+      response_type: 'ephemeral',
+      text: filterByUserId ? '✅ You have no tasks due this week!' : '✅ No tasks due this week.'
+    });
+    return;
+  }
+  
+  const weekStart = getStartOfWeek(getAustralianDate());
+  const summary = filterByUserId 
+    ? formatPersonalWeeklySummary(alerts, weekStart)
+    : formatWeeklySummary(alerts, weekStart);
+    
+  await respond({
+    response_type: filterByUserId ? 'ephemeral' : 'in_channel',
+    ...summary
+  });
+}
+
+async function handleOverdueQuery(
+  respond: Function,
+  taskMonitor: TaskMonitor,
+  filterByUserId?: string
+): Promise<void> {
+  await respond({ response_type: 'ephemeral', text: '🔍 Checking for overdue tasks...' });
+  
+  const alerts = await taskMonitor.getTasksOnDemand('overdue', filterByUserId);
+  
+  if (alerts.length === 0) {
+    await respond({
+      response_type: 'ephemeral',
+      text: filterByUserId ? '✅ You have no overdue tasks!' : '✅ No overdue tasks.'
+    });
+    return;
+  }
+  
+  // Format overdue alerts
+  await respond({
+    response_type: filterByUserId ? 'ephemeral' : 'in_channel',
+    blocks: [
+      {
+        type: 'header',
+        text: { type: 'plain_text', text: `🚨 Overdue Tasks (${alerts.length})` }
+      },
+      { type: 'divider' },
+      ...alerts.map(alert => ({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `*<${alert.taskUrl}|${alert.taskName}>*\n` +
+            `Due: ${formatDate(alert.dueDate)} | Assignee: ${alert.assignee} | Board: ${alert.boardName}`
+        }
+      }))
+    ]
+  });
+}
+
+async function handleManualTrigger(
+  respond: Function,
+  taskMonitor: TaskMonitor,
+  slackNotifier: SlackNotifier,
+  triggerType: string,
+  userId: string
+): Promise<void> {
+  // Check admin permissions
+  const adminUsers = (process.env.ADMIN_USER_IDS || '').split(',');
+  if (!adminUsers.includes(userId)) {
+    await respond({
+      response_type: 'ephemeral',
+      text: '❌ Only admins can manually trigger notifications.'
+    });
+    return;
+  }
+  
+  if (triggerType === 'daily') {
+    await respond({ response_type: 'ephemeral', text: '🚀 Triggering daily notifications...' });
+    
+    const alerts = await taskMonitor.processDailyTasks();
+    
+    // Send to team channel
+    const summary = formatDailySummary(alerts, getAustralianDate());
+    await slackNotifier.sendToChannel(process.env.TEAM_CHANNEL_ID!, summary);
+    
+    // Send individual DMs
+    for (const alert of alerts) {
+      if (alert.assigneeSlackId) {
+        await slackNotifier.sendDirectMessage(alert.assigneeSlackId, formatTaskAlert(alert));
+        await taskMonitor.markAlertSent(alert.id);
+      }
+    }
+    
+    await respond({
+      response_type: 'ephemeral',
+      text: `✅ Daily trigger complete! Sent ${alerts.length} notification(s).`
+    });
+    
+  } else if (triggerType === 'weekly') {
+    await respond({ response_type: 'ephemeral', text: '🚀 Triggering weekly notifications...' });
+    
+    const alerts = await taskMonitor.processWeeklyTasks();
+    const weekStart = getStartOfWeek(getAustralianDate());
+    
+    // Send team summary
+    await slackNotifier.sendToChannel(process.env.TEAM_CHANNEL_ID!, formatWeeklySummary(alerts, weekStart));
+    
+    // Send individual summaries
+    const byAssignee = groupBy(alerts, 'assigneeSlackId');
+    for (const [slackId, userAlerts] of Object.entries(byAssignee)) {
+      if (slackId && slackId !== 'undefined' && slackId !== 'null') {
+        await slackNotifier.sendDirectMessage(slackId, formatPersonalWeeklySummary(userAlerts, weekStart));
+      }
+    }
+    
+    await respond({
+      response_type: 'ephemeral',
+      text: `✅ Weekly trigger complete! Sent summary for ${alerts.length} task(s).`
+    });
+    
+  } else {
+    await respond({
+      response_type: 'ephemeral',
+      text: '❌ Invalid trigger type. Use `trigger daily` or `trigger weekly`.'
+    });
+  }
+}
+
+function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short' }).format(date);
+}
+
+function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
+  return array.reduce((result, item) => {
+    const k = String(item[key]);
+    if (!result[k]) result[k] = [];
+    result[k].push(item);
+    return result;
+  }, {} as Record<string, T[]>);
+}
+```
+
+### 2. Register the Command in Slack App
+**File: src/slack/app.ts** (ADD to existing file)
+
+Add the command handler to your existing Slack Bolt app:
+```typescript
+// ADD these imports at the top
+import { handleTasksCommand } from './handlers/taskCommandHandler';
+
+// ADD this command registration (in the function where you set up the app)
+app.command('/stirlo-tasks', async ({ command, ack, respond }) => {
+  await handleTasksCommand(command, ack, respond, taskMonitor, slackNotifier);
+});
+```
+
+### 3. Slack App Manifest Update
+Add this slash command to your Slack App configuration:
+```yaml
+slash_commands:
+  - command: /stirlo-tasks
+    description: View and manage tasks from Monday.com
+    usage_hint: "[today|week|overdue|my today|my week|trigger daily|trigger weekly|help]"
+    should_escape: false
+```
+
+### 4. Environment Variable
+Add to your .env:
