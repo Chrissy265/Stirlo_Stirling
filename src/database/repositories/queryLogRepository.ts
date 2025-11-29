@@ -1,4 +1,4 @@
-import { eq, desc, gte } from 'drizzle-orm';
+import { eq, desc, gte, lte } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import { queryLog } from '../../db/schema.js';
 import type { QueryLogEntry } from '../../types/monitoring.js';
@@ -96,7 +96,7 @@ export class QueryLogRepository {
   async deleteOld(beforeDate: Date): Promise<number> {
     const result = await db
       .delete(queryLog)
-      .where(eq(queryLog.timestamp, beforeDate));
+      .where(lte(queryLog.timestamp, beforeDate));
 
     return result.rowCount || 0;
   }
