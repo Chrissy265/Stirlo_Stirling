@@ -304,6 +304,7 @@ export const mondaySearchTool = createTool({
       items: z.array(z.object({
         id: z.string(),
         name: z.string(),
+        url: z.string().describe("Direct link to the task in Monday.com"),
         state: z.string().optional(),
         columnValues: z.array(z.object({
           title: z.string(),
@@ -396,6 +397,8 @@ export const mondaySearchTool = createTool({
             columns.map((col: any) => [col.id, { title: col.title, type: col.type }])
           );
           
+          const mondaySubdomain = process.env.MONDAY_SUBDOMAIN || 'stirlingmarketing';
+          
           // Filter items that match the search query using keywords
           const matchingItems = items.filter((item: any) => {
             const nameMatch = matchesKeywords(item.name, keywords);
@@ -428,10 +431,12 @@ export const mondaySearchTool = createTool({
             }) || [];
             
             const relevanceScore = calculateRelevance(item, keywords, undefined, undefined, item.column_values, columnTitleMap, context.searchQuery);
+            const taskUrl = `https://${mondaySubdomain}.monday.com/boards/${board.id}/pulses/${item.id}`;
             
             return {
               id: item.id,
               name: item.name,
+              url: taskUrl,
               state: item.state,
               relevanceScore,
               columnValues,
@@ -495,7 +500,9 @@ export const mondayGetUpcomingDeadlinesTool = createTool({
       boardId: z.string(),
       workspaceName: z.string().optional(),
       workspaceId: z.string().optional(),
+      itemId: z.string(),
       itemName: z.string(),
+      url: z.string().describe("Direct link to the task in Monday.com"),
       deadline: z.string(),
       daysUntilDeadline: z.number(),
       assignees: z.array(z.string()).optional(),
@@ -557,6 +564,8 @@ export const mondayGetUpcomingDeadlinesTool = createTool({
       const upcomingTasks: any[] = [];
       const workspacesFound = new Set<string>();
       
+      const mondaySubdomain = process.env.MONDAY_SUBDOMAIN || 'stirlingmarketing';
+      
       // Process all boards and items
       data.boards.forEach((board: any) => {
         const workspace = board.workspace || {};
@@ -600,12 +609,16 @@ export const mondayGetUpcomingDeadlinesTool = createTool({
                   const peopleColumns = item.column_values?.filter((col: any) => col.type === 'people');
                   const assignees = peopleColumns?.map((col: any) => col.text).filter(Boolean) || [];
                   
+                  const taskUrl = `https://${mondaySubdomain}.monday.com/boards/${board.id}/pulses/${item.id}`;
+                  
                   upcomingTasks.push({
                     boardName: board.name,
                     boardId: board.id,
                     workspaceName: workspace.name || 'Main Workspace',
                     workspaceId: workspace.id?.toString() || null,
+                    itemId: item.id,
                     itemName: item.name,
+                    url: taskUrl,
                     deadline: deadline.toISOString(),
                     daysUntilDeadline: daysUntil,
                     assignees,
@@ -663,6 +676,7 @@ export const mondaySearchWithDocsTool = createTool({
       workspaceId: z.string().optional(),
       itemId: z.string(),
       itemName: z.string(),
+      url: z.string().describe("Direct link to the task in Monday.com"),
       state: z.string().optional(),
       taskInfo: z.object({
         columnValues: z.array(z.object({
@@ -1051,6 +1065,9 @@ export const mondaySearchWithDocsTool = createTool({
             totalFiles += files.length;
             totalUpdates += itemUpdates.length;
             
+            const mondaySubdomain = process.env.MONDAY_SUBDOMAIN || 'stirlingmarketing';
+            const taskUrl = `https://${mondaySubdomain}.monday.com/boards/${board.id}/pulses/${item.id}`;
+            
             allItems.push({
               boardName: board.name,
               boardId: board.id,
@@ -1058,6 +1075,7 @@ export const mondaySearchWithDocsTool = createTool({
               workspaceId: workspace.id?.toString() || null,
               itemId: item.id,
               itemName: item.name,
+              url: taskUrl,
               state: item.state,
               relevanceScore,
               taskInfo: {

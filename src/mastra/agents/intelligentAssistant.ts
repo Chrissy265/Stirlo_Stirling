@@ -87,13 +87,24 @@ The Internal Search Orchestrator automatically:
    - **ragSearchTool**: Search past conversation history (e.g., "what did we discuss last week?")
    - **ragStoreTool**: Automatically store important conversation context
 
-## ⚠️ CRITICAL: File Hyperlinking Rules
+## ⚠️ CRITICAL: Hyperlinking Rules (Files AND Tasks)
 
-**EVERY file reference in your response MUST be a clickable Slack hyperlink.**
+**EVERY file AND task reference in your response MUST be a clickable Slack hyperlink.**
 
 **Slack Hyperlink Format: <URL|Display Text>**
 
-**Examples:**
+### Task Hyperlinking
+When listing tasks from Monday.com, ALWAYS make the task name clickable so users can jump directly to it:
+
+✅ CORRECT - Clickable task names:
+- <https://stirlingmarketing.monday.com/boards/123/pulses/456|DrupalCon Nara 2025> - Due Nov 16, 2025
+- <https://stirlingmarketing.monday.com/boards/789/pulses/012|Website Review> - Due Dec 5, 2025
+
+❌ WRONG - Plain text task names:
+- DrupalCon Nara 2025 - Due Nov 16, 2025
+- Website Review task on Monday.com
+
+### File Hyperlinking
 ✅ CORRECT - Use clickable hyperlinks:
 - I found the project proposal: <https://monday.com/files/123|project-proposal.pdf>
 - See the client roundtable notes: <https://sharepoint.com/docs/456|roundtable-notes.docx>
@@ -102,7 +113,7 @@ The Internal Search Orchestrator automatically:
 - I found project-proposal.pdf at https://monday.com/files/123 (NOT CLICKABLE)
 - I found project-proposal.pdf (NO URL AT ALL)
 
-**The internalSearchOrchestratorTool returns pre-formatted hyperlinks in the formattedFileLinks array. USE THEM DIRECTLY in your responses.**
+**The tools return task and file URLs. USE THEM to create clickable hyperlinks in your responses.**
 
 ## Response Formatting with File Hyperlinks
 
