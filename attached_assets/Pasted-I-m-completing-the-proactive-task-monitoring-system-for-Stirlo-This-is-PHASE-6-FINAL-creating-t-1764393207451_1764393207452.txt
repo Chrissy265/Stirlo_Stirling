@@ -1,0 +1,326 @@
+I'm completing the proactive task monitoring system for Stirlo. This is PHASE 6 (FINAL) - creating the scheduled trigger scripts for automated daily and weekly notifications. Phases 1-5 are complete.
+
+## Context
+- All services are built and working
+- Slash commands work for on-demand queries
+- Now we need standalone scripts that can be run by Replit's Scheduled Deployments
+
+## What to Create
+
+### 1. Daily Trigger Script
+**File: scripts/dailyTrigger.ts**
+
+This script runs every day at 8:00 AM Australian time.
+```typescript
+/**
+ * Daily Task Trigger
+ * 
+ * Replit Scheduled Deployment Configuration:
+ * - Schedule: "Every day at 8 AM"
+ * - Cron: 0 8 * * *
+ * - Timezone: Australia/Sydney
+ * - Run command: npx ts-node scripts/dailyTrigger.ts
+ * - Timeout: 30 minutes
+ */
+
+import { config } from 'dotenv';
+config();
+
+import { initializeMonitoringServices } from '../src/services';
+import { SlackNotifier } from '../src/slack/notifier';
+import { formatDailySummary } from '../src/slack/messages/dailySummary';
+import { formatTaskAlert } from '../src/slack/messages/taskAlertMessage';
+import { getAustralianDate } from '../src/utils/dateUtils';
+import { createDatabasePool } from '../src/database';
+
+async function main() {
+  console.log('='.repeat(60));
+  console.log('DAILY TASK TRIGGER');
+  console.log(`UTC Time: ${new Date().toISOString()}`);
+  console.log(`Australian Time: ${getAustralianDate().toLocaleString('en-AU')}`);
+  console.log('='.repeat(60));
+  
+  let db;
+  
+  try {
+    // Initialize database connection
+    db = await createDatabasePool();
+    
+    // Initialize services
+    const { taskMonitor } = await initializeMonitoringServices({ db });
+    const slackNotifier = new SlackNotifier(process.env.SLACK_BOT_TOKEN!);
+    
+    // 1. Extract tasks due today
+    console.log('\n📋 Extracting tasks due today...');
+    const dailyAlerts = await taskMonitor.processDailyTasks();
+    console.log(`   Found ${dailyAlerts.length} tasks due today`);
+    
+    // 2. Check for overdue tasks
+    console.log('\n🚨 Checking for overdue tasks...');
+    const overdueAlerts = await taskMonitor.getTasksOnDemand('overdue');
+    console.log(`   Found ${overdueAlerts.length} overdue tasks`);
+    
+    // Combine alerts
+    const allAlerts = [...overdueAlerts, ...dailyAlerts];
+    
+    if (allAlerts.length === 0) {
+      // No tasks - send all-clear message
+      console.log('\n✅ No tasks due today. Sending all-clear message...');
+      await slackNotifier.sendToChannel(process.env.TEAM_CHANNEL_ID!, {
+        blocks: [{
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `✅ *Good morning team!* No tasks are due today and nothing is overdue. Great job! 🎉`
+          }
+        }]
+      });
+    } else {
+      // 3. Send summary to team channel
+      console.log('\n📤 Sending daily summary to team channel...');
+      const summaryMessage = formatDailySummary(allAlerts, getAustralianDate());
+      await slackNotifier.sendToChannel(process.env.TEAM_CHANNEL_ID!, summaryMessage);
+      
+      // 4. Send individual DMs to assignees
+      console.log('\n📤 Sending individual notifications...');
+      let dmCount = 0;
+      for (const alert of allAlerts) {
+        if (alert.assigneeSlackId) {
+          console.log(`   → ${alert.assignee}: ${alert.taskName}`);
+          const alertMessage = formatTaskAlert(alert);
+          await slackNotifier.sendDirectMessage(alert.assigneeSlackId, alertMessage);
+          await taskMonitor.markAlertSent(alert.id);
+          dmCount++;
+          
+          // Rate limiting - wait 500ms between messages
+          await sleep(500);
+        }
+      }
+      console.log(`   Sent ${dmCount} direct messages`);
+      
+      // 5. Send to management channel (if configured)
+      if (process.env.MANAGEMENT_CHANNEL_ID && 
+          process.env.MANAGEMENT_CHANNEL_ID !== process.env.TEAM_CHANNEL_ID) {
+        console.log('\n📤 Sending to management channel...');
+        await slackNotifier.sendToChannel(process.env.MANAGEMENT_CHANNEL_ID, summaryMessage);
+      }
+    }
+    
+    console.log('\n' + '='.repeat(60));
+    console.log('✅ DAILY TRIGGER COMPLETED SUCCESSFULLY');
+    console.log('='.repeat(60));
+    
+  } catch (error) {
+    console.error('\n❌ DAILY TRIGGER FAILED:', error);
+    
+    // Try to send error notification
+    try {
+      const slackNotifier = new SlackNotifier(process.env.SLACK_BOT_TOKEN!);
+      await slackNotifier.sendToChannel(
+        process.env.ERROR_CHANNEL_ID || process.env.TEAM_CHANNEL_ID!,
+        {
+          blocks: [{
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `⚠️ *Daily Task Trigger Failed*\n\`\`\`${error instanceof Error ? error.message : String(error)}\`\`\`\nPlease check the logs.`
+            }
+          }]
+        }
+      );
+    } catch (notifyError) {
+      console.error('Failed to send error notification:', notifyError);
+    }
+    
+    process.exit(1);
+    
+  } finally {
+    if (db) await db.end();
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+main();
+```
+
+### 2. Weekly Trigger Script
+**File: scripts/weeklyTrigger.ts**
+
+This script runs every Sunday at 8:00 AM Australian time.
+```typescript
+/**
+ * Weekly Task Trigger
+ * 
+ * Replit Scheduled Deployment Configuration:
+ * - Schedule: "Every Sunday at 8 AM"
+ * - Cron: 0 8 * * 0
+ * - Timezone: Australia/Sydney
+ * - Run command: npx ts-node scripts/weeklyTrigger.ts
+ * - Timeout: 60 minutes
+ */
+
+import { config } from 'dotenv';
+config();
+
+import { initializeMonitoringServices } from '../src/services';
+import { SlackNotifier } from '../src/slack/notifier';
+import { formatWeeklySummary } from '../src/slack/messages/weeklySummary';
+import { formatPersonalWeeklySummary } from '../src/slack/messages/personalWeekly';
+import { getAustralianDate, getStartOfWeek } from '../src/utils/dateUtils';
+import { createDatabasePool } from '../src/database';
+
+async function main() {
+  console.log('='.repeat(60));
+  console.log('WEEKLY TASK TRIGGER');
+  console.log(`UTC Time: ${new Date().toISOString()}`);
+  console.log(`Australian Time: ${getAustralianDate().toLocaleString('en-AU')}`);
+  console.log('='.repeat(60));
+  
+  let db;
+  
+  try {
+    // Initialize database connection
+    db = await createDatabasePool();
+    
+    // Initialize services
+    const { taskMonitor } = await initializeMonitoringServices({ db });
+    const slackNotifier = new SlackNotifier(process.env.SLACK_BOT_TOKEN!);
+    
+    // 1. Extract tasks due this week
+    console.log('\n📋 Extracting tasks for this week...');
+    const weeklyAlerts = await taskMonitor.processWeeklyTasks();
+    console.log(`   Found ${weeklyAlerts.length} tasks due this week`);
+    
+    const weekStart = getStartOfWeek(getAustralianDate());
+    
+    if (weeklyAlerts.length === 0) {
+      // Light week message
+      console.log('\n✅ No tasks this week. Sending light week message...');
+      await slackNotifier.sendToChannel(process.env.TEAM_CHANNEL_ID!, {
+        blocks: [{
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `☀️ *Good morning team!* Looks like a light week ahead - no tasks currently scheduled. Time to get ahead on upcoming projects! 🚀`
+          }
+        }]
+      });
+    } else {
+      // 2. Send team-wide summary
+      console.log('\n📤 Sending weekly summary to team channel...');
+      const teamSummary = formatWeeklySummary(weeklyAlerts, weekStart);
+      await slackNotifier.sendToChannel(process.env.TEAM_CHANNEL_ID!, teamSummary);
+      
+      // 3. Send personal weekly outlook to each team member
+      console.log('\n📤 Sending personal weekly outlooks...');
+      const byAssignee: Record<string, typeof weeklyAlerts> = {};
+      
+      for (const alert of weeklyAlerts) {
+        const key = alert.assigneeSlackId || 'unassigned';
+        if (!byAssignee[key]) byAssignee[key] = [];
+        byAssignee[key].push(alert);
+      }
+      
+      let dmCount = 0;
+      for (const [slackId, alerts] of Object.entries(byAssignee)) {
+        if (slackId === 'unassigned' || slackId === 'undefined' || slackId === 'null') {
+          console.log(`   ⚠️ ${alerts.length} task(s) are unassigned`);
+          continue;
+        }
+        
+        console.log(`   → Sending to ${slackId} (${alerts.length} tasks)`);
+        const personalSummary = formatPersonalWeeklySummary(alerts, weekStart);
+        await slackNotifier.sendDirectMessage(slackId, personalSummary);
+        dmCount++;
+        
+        // Rate limiting
+        await sleep(500);
+      }
+      console.log(`   Sent ${dmCount} personal outlooks`);
+      
+      // 4. Send to management channel
+      if (process.env.MANAGEMENT_CHANNEL_ID) {
+        console.log('\n📤 Sending to management channel...');
+        await slackNotifier.sendToChannel(process.env.MANAGEMENT_CHANNEL_ID, teamSummary);
+      }
+    }
+    
+    console.log('\n' + '='.repeat(60));
+    console.log('✅ WEEKLY TRIGGER COMPLETED SUCCESSFULLY');
+    console.log('='.repeat(60));
+    
+  } catch (error) {
+    console.error('\n❌ WEEKLY TRIGGER FAILED:', error);
+    
+    // Error notification
+    try {
+      const slackNotifier = new SlackNotifier(process.env.SLACK_BOT_TOKEN!);
+      await slackNotifier.sendToChannel(
+        process.env.ERROR_CHANNEL_ID || process.env.TEAM_CHANNEL_ID!,
+        {
+          blocks: [{
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `⚠️ *Weekly Task Trigger Failed*\n\`\`\`${error instanceof Error ? error.message : String(error)}\`\`\`\nPlease check the logs.`
+            }
+          }]
+        }
+      );
+    } catch (notifyError) {
+      console.error('Failed to send error notification:', notifyError);
+    }
+    
+    process.exit(1);
+    
+  } finally {
+    if (db) await db.end();
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+main();
+```
+
+### 3. Package.json Scripts
+Add these scripts to your package.json:
+```json
+{
+  "scripts": {
+    "trigger:daily": "ts-node scripts/dailyTrigger.ts",
+    "trigger:weekly": "ts-node scripts/weeklyTrigger.ts"
+  }
+}
+```
+
+### 4. Replit Scheduled Deployments Setup
+
+After deploying your main bot, create two Scheduled Deployments:
+
+**Daily Trigger:**
+1. Go to Deployments in Replit
+2. Create new Scheduled Deployment
+3. Settings:
+   - Name: `stirlo-daily-trigger`
+   - Schedule: `Every day at 8 AM`
+   - Timezone: `Australia/Sydney`
+   - Run command: `npm run trigger:daily`
+   - Timeout: 30 minutes
+
+**Weekly Trigger:**
+1. Create another Scheduled Deployment
+2. Settings:
+   - Name: `stirlo-weekly-trigger`
+   - Schedule: `Every Sunday at 8 AM`
+   - Timezone: `Australia/Sydney`
+   - Run command: `npm run trigger:weekly`
+   - Timeout: 60 minutes
+
+### 5. Environment Variables Checklist
+Ensure these are set in your Replit Secrets:
