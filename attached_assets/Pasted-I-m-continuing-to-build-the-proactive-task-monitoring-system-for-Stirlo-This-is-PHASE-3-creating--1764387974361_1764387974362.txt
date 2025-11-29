@@ -1,0 +1,218 @@
+I'm continuing to build the proactive task monitoring system for Stirlo. This is PHASE 3 - creating the core Task Monitoring Service. Phases 1 (database) and 2 (Monday.com integration) are complete.
+
+## Context
+- The MondayWorkspaceManager can now fetch tasks by date range
+- The database repositories are ready to store alerts
+- We need a service that orchestrates task monitoring and alert generation
+
+## What to Create
+
+### 1. Alert Generator Service
+**File: src/services/alertGenerator.ts**
+
+Creates contextual messages based on task type and timing:
+```typescript
+interface ReminderTemplate {
+  pattern: RegExp;           // Pattern to match task names
+  daysBeforeReminders: number[];  // e.g., [7, 3, 1, 0]
+  messages: Record<number, string>;  // Day -> Message mapping
+}
+
+export class AlertGenerator {
+  private reminderTemplates: ReminderTemplate[] = [
+    {
+      pattern: /round\s*table/i,
+      daysBeforeReminders: [7, 3, 1, 0],
+      messages: {
+        7: '📅 Round table one week away. Have we done the name badges?\n\n*Checklist:*\n• Name badges prepared\n• Agenda finalized\n• Room booking confirmed\n• Catering ordered',
+        3: '📅 Round table in 3 days! Time to finalize agenda and confirm attendees.',
+        1: '⚠️ Round table is TOMORROW! Final preparations needed.',
+        0: '🔔 Round table is TODAY! Arrive early for setup.'
+      }
+    },
+    {
+      pattern: /presentation|pitch|deck/i,
+      daysBeforeReminders: [5, 2, 1, 0],
+      messages: {
+        5: '🎯 Presentation in 5 days. Review deck with stakeholders.',
+        2: '🎯 Presentation in 2 days! Final review and practice.',
+        1: '⚠️ Presentation is TOMORROW! Final preparations.',
+        0: '🔔 Presentation is TODAY! You\'ve got this! 💪'
+      }
+    },
+    {
+      pattern: /campaign\s*launch|go.?live/i,
+      daysBeforeReminders: [7, 3, 1, 0],
+      messages: {
+        7: '🚀 Campaign launch one week out!\n\n*Pre-launch checklist:*\n• Creative assets approved\n• Landing page tested\n• Tracking pixels installed\n• Team briefed',
+        3: '🚀 Campaign launches in 3 days! Final QA checks.',
+        1: '⚠️ Campaign launches TOMORROW! Stakeholder sign-off needed.',
+        0: '🚀 LAUNCH DAY! Monitor closely for first 2 hours.'
+      }
+    },
+    {
+      pattern: /client\s*meeting|client\s*call/i,
+      daysBeforeReminders: [3, 1, 0],
+      messages: {
+        3: '📞 Client meeting in 3 days. Review account status.',
+        1: '📞 Client meeting TOMORROW! Finalize presentation.',
+        0: '📞 Client meeting TODAY! Join 5 minutes early.'
+      }
+    }
+  ];
+  
+  // Generate contextual message based on task name and days until due
+  generateContextualMessage(task: Task, alertType: string): string | null;
+  
+  // Generate checklist for common task types
+  generateChecklist(task: Task): string[] | null;
+  
+  // Get default message when no template matches
+  private getDefaultMessage(daysUntilDue: number, alertType: string): string | null;
+}
+```
+
+### 2. Task Monitor Service
+**File: src/services/taskMonitor.ts**
+
+The main orchestration service:
+```typescript
+export class TaskMonitor {
+  constructor(
+    private mondayManager: MondayWorkspaceManager,
+    private alertGenerator: AlertGenerator,
+    private documentExtractor: DocumentExtractor,
+    private alertRepo: AlertRepository,
+    private userMappingRepo: UserMappingRepository,
+    private queryLogRepo: QueryLogRepository
+  ) {}
+  
+  /**
+   * Extract and process tasks due today
+   * Called by daily scheduler at 8am AEST
+   */
+  async processDailyTasks(): Promise<TaskAlert[]> {
+    const now = getAustralianDate();
+    const startOfDay = getStartOfDay(now);
+    const endOfDay = getEndOfDay(now);
+    
+    const tasks = await this.mondayManager.getTasksDueInRange(startOfDay, endOfDay);
+    const alerts = await this.generateAlerts(tasks, 'due_today');
+    
+    await this.alertRepo.createMany(alerts);
+    return alerts;
+  }
+  
+  /**
+   * Extract and process tasks due this week
+   * Called by weekly scheduler on Sundays at 8am AEST
+   */
+  async processWeeklyTasks(): Promise<TaskAlert[]> {
+    const now = getAustralianDate();
+    const startOfWeek = getStartOfWeek(now);
+    const endOfWeek = getEndOfWeek(now);
+    
+    const tasks = await this.mondayManager.getTasksDueInRange(startOfWeek, endOfWeek);
+    const alerts = await this.generateAlerts(tasks, 'due_this_week');
+    
+    await this.alertRepo.createMany(alerts);
+    return alerts;
+  }
+  
+  /**
+   * On-demand task extraction for user queries
+   * @param type - 'today' | 'week' | 'overdue'
+   * @param userId - Optional Slack user ID to filter by
+   */
+  async getTasksOnDemand(
+    type: 'today' | 'week' | 'overdue',
+    userId?: string
+  ): Promise<TaskAlert[]>;
+  
+  /**
+   * Generate alerts with contextual messages and documents
+   */
+  private async generateAlerts(
+    tasks: Task[],
+    alertType: TaskAlert['alertType']
+  ): Promise<TaskAlert[]>;
+  
+  /**
+   * Calculate priority based on task and timing
+   */
+  private calculatePriority(task: Task, alertType: string): 'high' | 'medium' | 'low';
+  
+  /**
+   * Get alerts pending to be sent
+   */
+  async getPendingAlerts(): Promise<TaskAlert[]>;
+  
+  /**
+   * Mark an alert as sent
+   */
+  async markAlertSent(alertId: string): Promise<void>;
+  
+  /**
+   * Log a user query for visibility
+   */
+  async logQuery(
+    userId: string,
+    query: string,
+    channel: string,
+    resultsCount: number
+  ): Promise<void>;
+}
+```
+
+### 3. Service Initialization
+**File: src/services/index.ts** (or add to existing)
+
+Export a function to initialize all monitoring services:
+```typescript
+export async function initializeMonitoringServices(deps: {
+  db: DatabasePool;
+}): Promise<{
+  taskMonitor: TaskMonitor;
+  mondayManager: MondayWorkspaceManager;
+}> {
+  // Load workspace configs from environment
+  const workspaceConfigs = JSON.parse(process.env.MONDAY_WORKSPACES || '[]');
+  
+  // Initialize Monday workspace manager
+  const mondayManager = new MondayWorkspaceManager();
+  await mondayManager.initialize(workspaceConfigs);
+  
+  // Initialize repositories
+  const alertRepo = new AlertRepository(deps.db);
+  const userMappingRepo = new UserMappingRepository(deps.db);
+  const queryLogRepo = new QueryLogRepository(deps.db);
+  
+  // Initialize services
+  const alertGenerator = new AlertGenerator();
+  const documentExtractor = new DocumentExtractor();
+  
+  const taskMonitor = new TaskMonitor(
+    mondayManager,
+    alertGenerator,
+    documentExtractor,
+    alertRepo,
+    userMappingRepo,
+    queryLogRepo
+  );
+  
+  return { taskMonitor, mondayManager };
+}
+```
+
+## Do NOT Touch
+- Existing Slack handlers (we'll add to them in Phase 5)
+- Existing search orchestrator
+- Main app entry point (we'll update it in Phase 6)
+
+## Success Criteria
+- [ ] AlertGenerator creates contextual messages for known task types
+- [ ] TaskMonitor can process daily tasks
+- [ ] TaskMonitor can process weekly tasks
+- [ ] TaskMonitor can handle on-demand queries with optional user filtering
+- [ ] Alerts include related documents
+- [ ] Services can be initialized without breaking existing app
