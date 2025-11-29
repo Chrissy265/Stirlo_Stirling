@@ -35,16 +35,34 @@ Preferred communication style: Simple, everyday language.
 
 **Rationale**: Migrated from OpenAI GPT to Anthropic Claude for improved production reliability. Multi-step reasoning allows the agent to chain tool calls and refine responses. Zod schemas ensure type safety and validate inputs before execution.
 
-### Task Monitoring Infrastructure (Phase 1 Complete)
+### Task Monitoring Infrastructure (Phase 1-5 Complete)
 - **Timezone Handling**: DST-aware Australia/Sydney timezone utilities
 - **Algorithm**: Hourly iteration (O(48)) to find correct midnight boundaries during DST transitions
 - **Database Tables**: user_mappings, task_alerts, query_log with proper indexes
 - **Repositories**: AlertRepository, UserMappingRepository, QueryLogRepository using Drizzle ORM patterns
+- **Task Monitor Service**: Unified task fetching from all Monday.com boards with due date filtering
+- **Slack Message Formatters**: Block Kit message builders for task alerts with action buttons
+- **SlackNotifier Class**: Channel/DM message sending with thread support
+
+**On-Demand Task Commands (Phase 5)**:
+Users can query tasks via @-mentions in any channel:
+- `@Stirlo tasks today` - Team tasks due today
+- `@Stirlo tasks week` - Team tasks due this week  
+- `@Stirlo tasks overdue` - All overdue team tasks
+- `@Stirlo my today` - Personal tasks due today
+- `@Stirlo my week` - Personal tasks due this week
+- `@Stirlo trigger daily` - Manually trigger daily team summary
+- `@Stirlo trigger weekly` - Manually trigger weekly team summary
+- `@Stirlo help` - Show available commands
 
 **Key Files**:
 - `src/utils/dateUtils.ts` - Australian timezone utilities with DST support
 - `src/database/repositories/*.ts` - Database access layer
 - `src/types/monitoring.ts` - TypeScript type definitions
+- `src/services/taskMonitor.ts` - Central task fetching and filtering
+- `src/slack/handlers/taskCommandParser.ts` - Command detection and parsing
+- `src/slack/handlers/taskCommandHandler.ts` - Command execution and response formatting
+- `src/slack/messages/*.ts` - Block Kit message formatters
 
 ### Slack Integration
 - **Connection**: Socket Mode via `@slack/socket-mode` and `@slack/web-api`

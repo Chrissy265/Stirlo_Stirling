@@ -79,3 +79,8 @@ waitForPort = 3000
 
 [workflows.workflow.metadata]
 outputType = "automations"
+
+[userenv]
+
+[userenv.shared]
+TEAM_CHANNEL_ID = "C09PHGX6YDU"
