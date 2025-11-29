@@ -1,0 +1,152 @@
+I'm continuing to build the proactive task monitoring system for Stirlo. This is PHASE 2 - creating the Monday.com integration layer for task extraction. The database schema from Phase 1 is complete.
+
+## Context
+- We need to extract tasks from MULTIPLE Monday.com workspaces
+- Each workspace may have different API tokens
+- Each board may have different column IDs for dates and assignees
+- We need to extract tasks, their due dates, assignees, and attached files/documents
+
+## What to Create
+
+### 1. Monday.com GraphQL Queries
+**File: src/monday/queries.ts**
+
+Add these queries (keep any existing queries):
+```graphql
+# Get all items with full details for date filtering
+query GetItemsForDateFilter($boardId: ID!, $limit: Int!, $cursor: String) {
+  boards(ids: [$boardId]) {
+    id
+    name
+    workspace {
+      id
+      name
+    }
+    items_page(limit: $limit, cursor: $cursor) {
+      cursor
+      items {
+        id
+        name
+        state
+        created_at
+        updated_at
+        group {
+          id
+          title
+        }
+        column_values {
+          id
+          text
+          value
+          type
+          column {
+            id
+            title
+          }
+        }
+        assets {
+          id
+          name
+          url
+          file_extension
+        }
+      }
+    }
+  }
+}
+
+# Get users for mapping
+query GetUsers {
+  users {
+    id
+    name
+    email
+  }
+}
+```
+
+### 2. Multi-Workspace Manager
+**File: src/monday/workspaceManager.ts**
+
+Create a class that manages multiple Monday.com workspaces:
+```typescript
+interface WorkspaceConfig {
+  id: string;
+  name: string;
+  apiToken: string;
+  boards: BoardConfig[];
+}
+
+interface BoardConfig {
+  id: string;
+  name: string;
+  dateColumnId: string;      // Column ID for due date
+  assigneeColumnId: string;  // Column ID for assignee
+}
+
+interface Task {
+  id: string;
+  name: string;
+  boardId: string;
+  boardName: string;
+  workspaceId: string;
+  workspaceName: string;
+  groupName: string;
+  dueDate: Date | null;
+  assigneeId: string | null;
+  assigneeName: string | null;
+  status: string;
+  statusColor: string;
+  assets: TaskAsset[];
+  columnValues: Record<string, any>;
+  url: string;
+}
+
+interface TaskAsset {
+  id: string;
+  name: string;
+  url: string;
+  fileExtension: string;
+}
+
+export class MondayWorkspaceManager {
+  // Store workspace configs and clients
+  private workspaces: Map<string, WorkspaceConfig>;
+  private clients: Map<string, MondayClient>;
+  private userCache: Map<string, { name: string; email: string }>;
+  
+  // Initialize with configs from environment/database
+  async initialize(configs: WorkspaceConfig[]): Promise<void>;
+  
+  // Load Monday.com users into cache
+  private async loadUsers(): Promise<void>;
+  
+  // Get all tasks due within a date range across ALL workspaces
+  async getTasksDueInRange(startDate: Date, endDate: Date): Promise<Task[]>;
+  
+  // Get tasks from a specific board (internal method)
+  private async getTasksFromBoard(
+    client: MondayClient,
+    board: BoardConfig,
+    workspace: WorkspaceConfig,
+    startDate: Date,
+    endDate: Date
+  ): Promise<Task[]>;
+  
+  // Get a specific task by ID (searches all workspaces)
+  async getTaskById(taskId: string): Promise<Task | null>;
+}
+```
+
+Key implementation details:
+- Iterate through all items and filter by date in code (more reliable than Monday's date filtering)
+- Parse the date column value to get the due date
+- Parse the assignee column to get the person ID, then look up name from user cache
+- Extract assets from both the `assets` field and any file-type columns
+- Build the task URL: `https://[subdomain].monday.com/boards/${boardId}/pulses/${itemId}`
+- Handle pagination with cursor
+
+### 3. Environment Configuration
+Add support for loading workspace configs from environment variables.
+
+**Expected ENV format:**
