@@ -1,0 +1,168 @@
+This is PHASE 1 - setting up the foundation and database schema. Do NOT modify any existing Slack handlers or integrations yet.
+
+## What to Create
+
+### 1. Database Schema
+Create a new migration file with these tables. Use PostgreSQL syntax compatible with Replit's database.
+
+**File: src/database/migrations/002_task_monitoring.sql**
+```sql
+-- User mappings between Monday.com and Slack
+CREATE TABLE IF NOT EXISTS user_mappings (
+    id SERIAL PRIMARY KEY,
+    monday_user_id VARCHAR(50) UNIQUE NOT NULL,
+    slack_user_id VARCHAR(50) NOT NULL,
+    monday_email VARCHAR(255),
+    display_name VARCHAR(200),
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_mappings_monday ON user_mappings(monday_user_id);
+CREATE INDEX IF NOT EXISTS idx_user_mappings_slack ON user_mappings(slack_user_id);
+
+-- Task alerts history
+CREATE TABLE IF NOT EXISTS task_alerts (
+    id VARCHAR(100) PRIMARY KEY,
+    task_id VARCHAR(50) NOT NULL,
+    task_name TEXT NOT NULL,
+    task_url TEXT,
+    board_id VARCHAR(50),
+    board_name VARCHAR(200),
+    workspace_name VARCHAR(200),
+    group_name VARCHAR(200),
+    assignee VARCHAR(200),
+    assignee_slack_id VARCHAR(50),
+    due_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    status VARCHAR(50),
+    status_color VARCHAR(20),
+    alert_type VARCHAR(50) NOT NULL,
+    related_documents JSONB DEFAULT '[]',
+    contextual_message TEXT,
+    priority VARCHAR(20) DEFAULT 'medium',
+    sent_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_task_alerts_due_date ON task_alerts(due_date);
+CREATE INDEX IF NOT EXISTS idx_task_alerts_assignee ON task_alerts(assignee_slack_id);
+CREATE INDEX IF NOT EXISTS idx_task_alerts_sent ON task_alerts(sent_at) WHERE sent_at IS NULL;
+
+-- Query log for visibility (track what team members ask)
+CREATE TABLE IF NOT EXISTS query_log (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL,
+    user_name VARCHAR(200),
+    query TEXT NOT NULL,
+    intent VARCHAR(50),
+    channel VARCHAR(50),
+    results_count INTEGER DEFAULT 0,
+    response_time_ms INTEGER,
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_query_log_timestamp ON query_log(timestamp);
+```
+
+### 2. Database Repository Classes
+Create repository classes to interact with these tables.
+
+**File: src/database/repositories/alertRepository.ts**
+- `createMany(alerts: TaskAlert[]): Promise<void>` - Bulk insert alerts
+- `getPending(): Promise<TaskAlert[]>` - Get alerts not yet sent
+- `markSent(alertId: string): Promise<void>` - Mark alert as sent
+- `getByDateRange(start: Date, end: Date): Promise<TaskAlert[]>` - Get alerts in date range
+
+**File: src/database/repositories/userMappingRepository.ts**
+- `getSlackUserId(mondayUserId: string): Promise<string | null>` - Get Slack ID from Monday ID
+- `getMondayUserId(slackUserId: string): Promise<string | null>` - Get Monday ID from Slack ID
+- `upsert(mondayUserId: string, slackUserId: string, displayName?: string): Promise<void>` - Create or update mapping
+- `getAll(): Promise<UserMapping[]>` - Get all mappings
+
+**File: src/database/repositories/queryLogRepository.ts**
+- `create(entry: QueryLogEntry): Promise<void>` - Log a query
+- `getRecent(limit: number): Promise<QueryLogEntry[]>` - Get recent queries
+- `getByUser(userId: string, limit: number): Promise<QueryLogEntry[]>` - Get queries by user
+
+### 3. Australian Timezone Utilities
+Create date utilities that work in Australian timezone (AEST/AEDT).
+
+**File: src/utils/dateUtils.ts**
+```typescript
+const TIMEZONE = 'Australia/Sydney';
+
+export function getAustralianDate(): Date;
+export function getStartOfDay(date: Date): Date;
+export function getEndOfDay(date: Date): Date;
+export function getStartOfWeek(date: Date): Date;  // Monday start
+export function getEndOfWeek(date: Date): Date;    // Sunday end
+export function formatAustralianDate(date: Date): string;
+export function getDaysUntilDue(dueDate: Date): number;
+export function isToday(date: Date): boolean;
+export function isOverdue(date: Date): boolean;
+```
+
+### 4. TypeScript Types
+Create shared types for the monitoring system.
+
+**File: src/types/monitoring.ts**
+```typescript
+export interface TaskAlert {
+  id: string;
+  taskId: string;
+  taskName: string;
+  taskUrl: string;
+  boardId: string;
+  boardName: string;
+  workspaceName: string;
+  groupName: string;
+  assignee: string;
+  assigneeSlackId: string | null;
+  dueDate: Date;
+  status: string;
+  statusColor: string;
+  alertType: 'due_today' | 'due_this_week' | 'overdue' | 'upcoming_event';
+  relatedDocuments: DocumentLink[];
+  contextualMessage: string | null;
+  priority: 'high' | 'medium' | 'low';
+  sentAt: Date | null;
+  createdAt: Date;
+}
+
+export interface DocumentLink {
+  id: string;
+  name: string;
+  url: string;
+  source: 'Monday.com' | 'SharePoint';
+  fileType: string;
+}
+
+export interface UserMapping {
+  mondayUserId: string;
+  slackUserId: string;
+  displayName?: string;
+}
+
+export interface QueryLogEntry {
+  userId: string;
+  userName?: string;
+  query: string;
+  channel: string;
+  resultsCount: number;
+  timestamp: Date;
+}
+```
+
+## Do NOT Touch
+- Any existing Slack handlers
+- Any existing Monday.com client code
+- The main application entry point
+- Any existing services
+
+## Success Criteria
+- [ ] Migration file created and can be run
+- [ ] All repository classes created with proper TypeScript types
+- [ ] Date utilities working correctly with Australian timezone
+- [ ] Types file created and exported
+- [ ] No errors when building the project
