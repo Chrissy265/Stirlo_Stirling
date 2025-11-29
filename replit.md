@@ -23,7 +23,8 @@ Preferred communication style: Simple, everyday language.
 
 ### Agent Architecture
 - **Primary Agent**: `intelligentAssistant` - Multi-step reasoning agent (max 5 steps)
-- **Model**: OpenAI GPT-based models via `@ai-sdk/openai`
+- **Model**: Anthropic Claude Sonnet 4.5 via `@ai-sdk/anthropic`
+- **Environment Detection**: Auto-detects Replit AI Integrations vs direct API key
 - **Tool Execution**: Synchronous tool calls with structured Zod schema validation
 - **Memory**: Persistent conversation threads stored in PostgreSQL with RAG capabilities
 
@@ -32,7 +33,18 @@ Preferred communication style: Simple, everyday language.
 2. **Monday.com Search** - Queries tasks, projects, documents, and updates with mandatory search priority
 3. **RAG Semantic Search** - Vector-based search over past conversations using pgvector
 
-**Rationale**: Multi-step reasoning allows the agent to chain tool calls and refine responses. Zod schemas ensure type safety and validate inputs before execution. The mandatory Monday.com search priority ensures organizational context is always checked first.
+**Rationale**: Migrated from OpenAI GPT to Anthropic Claude for improved production reliability. Multi-step reasoning allows the agent to chain tool calls and refine responses. Zod schemas ensure type safety and validate inputs before execution.
+
+### Task Monitoring Infrastructure (Phase 1 Complete)
+- **Timezone Handling**: DST-aware Australia/Sydney timezone utilities
+- **Algorithm**: Hourly iteration (O(48)) to find correct midnight boundaries during DST transitions
+- **Database Tables**: user_mappings, task_alerts, query_log with proper indexes
+- **Repositories**: AlertRepository, UserMappingRepository, QueryLogRepository using Drizzle ORM patterns
+
+**Key Files**:
+- `src/utils/dateUtils.ts` - Australian timezone utilities with DST support
+- `src/database/repositories/*.ts` - Database access layer
+- `src/types/monitoring.ts` - TypeScript type definitions
 
 ### Slack Integration
 - **Connection**: Socket Mode via `@slack/socket-mode` and `@slack/web-api`
@@ -101,9 +113,9 @@ Messages: id, user_id (FK), role ('user'|'assistant'), content, created_at
    - Signing secret for request verification (SLACK_SIGNING_SECRET)
    - Permissions: `app_mentions:read`, `chat:write`, `channels:history`, `im:history`, `reactions:write`
 
-2. **OpenAI API**
-   - API key authentication (OPENAI_API_KEY)
-   - Models: GPT-4/GPT-5 via AI SDK
+2. **Anthropic API**
+   - Environment-aware: Replit AI Integrations (AI_INTEGRATIONS_ANTHROPIC_*) or direct API key (ANTHROPIC_API_KEY)
+   - Model: Claude Sonnet 4.5 via AI SDK
    - Usage: Agent reasoning and response generation
 
 3. **Microsoft SharePoint**
