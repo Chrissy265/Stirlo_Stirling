@@ -210,3 +210,88 @@ Messages: id, user_id (FK), role ('user'|'assistant'), content, created_at
 3. **Slack Socket Mode**: Only one active connection allowed per app token
 4. **Render Free Tier**: Requires keep-alive service to prevent idling
 5. **HTTPS**: Not enforced in development but required for production
+
+## Proactive Task Monitoring
+
+### Overview
+Stirlo includes a comprehensive Proactive Task Monitoring system that automatically keeps the team informed about upcoming deadlines, overdue tasks, and weekly workloads by pulling data from Monday.com and delivering it directly to Slack.
+
+### Key Features
+| Feature | Description |
+|---------|-------------|
+| **Daily Notifications** | Automatic summary of tasks due today + overdue items sent every morning |
+| **Weekly Overview** | Monday morning summary showing the entire week's tasks organized by day |
+| **Personal Summaries** | Individual DMs sent to each team member with just their assigned tasks |
+| **Team Channel Posts** | Full team summaries posted to #stirlo-assistant |
+| **Clickable Task Links** | Every task name links directly to Monday.com for quick access |
+| **Smart Truncation** | Large task lists are automatically truncated to prevent Slack's 50-block limit |
+| **Error Alerts** | Failures are reported to #error-stirlo for quick troubleshooting |
+| **Retry Logic** | Automatic retries with exponential backoff for transient Monday.com API failures |
+
+### Benefits
+1. **Never Miss a Deadline** - Get reminded about due dates before they become overdue
+2. **Team Visibility** - Everyone sees the full workload in #stirlo-assistant
+3. **Personal Focus** - Get a filtered view of just YOUR tasks via DM
+4. **One-Click Access** - Task names are clickable links to Monday.com
+5. **Hands-Free** - Runs automatically on schedule, no manual intervention needed
+6. **On-Demand Access** - Query task status anytime with Slack commands
+7. **Reliable Delivery** - Retry logic ensures tasks are extracted even during API instability
+
+### Automatic Trigger Schedule
+| Trigger | Schedule | Timezone | What It Does |
+|---------|----------|----------|--------------|
+| **Daily** | Every day at 8:00 AM | Australia/Sydney | Posts today's tasks + overdue to #stirlo-assistant, sends personal DMs |
+| **Weekly** | Every Monday at 8:00 AM | Australia/Sydney | Posts weekly overview to #stirlo-assistant, sends personal weekly DMs |
+
+### Slack Commands (Ad-Hoc Queries)
+
+#### Team-Wide Views
+| Command | What It Shows |
+|---------|---------------|
+| `@Stirlo tasks today` | All tasks due today (entire team) |
+| `@Stirlo tasks week` | All tasks due this week (entire team) |
+| `@Stirlo tasks overdue` or `@Stirlo overdue tasks` | All overdue tasks (entire team) |
+
+#### Personal Views (Your Tasks Only)
+| Command | What It Shows |
+|---------|---------------|
+| `@Stirlo my tasks today` or `@Stirlo my today` | Your tasks due today |
+| `@Stirlo my tasks week` or `@Stirlo my week` | Your tasks due this week |
+
+#### Manual Triggers (Admin)
+| Command | What It Does |
+|---------|--------------|
+| `@Stirlo trigger daily` | Manually run the daily notification cycle |
+| `@Stirlo trigger weekly` | Manually run the weekly notification cycle |
+
+#### Help
+| Command | What It Shows |
+|---------|---------------|
+| `@Stirlo tasks help` | Display all available task commands |
+
+### Notification Channels
+| Channel | Purpose |
+|---------|---------|
+| **#stirlo-assistant** | Team summaries (daily & weekly) |
+| **#error-stirlo** | Error notifications if triggers fail |
+| **Direct Messages** | Personal task lists sent to each assignee |
+
+### Retry Logic (Robustness)
+The monitoring system includes two layers of retry protection:
+
+1. **API-Level Retries** (MondayClient):
+   - 3 retries with exponential backoff (1s, 2s, 4s delays)
+   - Handles timeouts, network errors, rate limits, and server errors (502, 503, 504, 429)
+
+2. **Extraction-Level Retries** (Trigger Scripts):
+   - If 0 tasks are returned, automatically retries up to 3 times
+   - Distinguishes between "no tasks exist" vs "API failure returned empty"
+   - 2s initial delay with 2x backoff multiplier
+
+### Technical Implementation
+- **Monday.com Client**: `src/monday/client.ts` - API calls with automatic retry
+- **Task Monitor**: `src/services/taskMonitor.ts` - Task extraction and filtering
+- **Daily Trigger**: `scripts/dailyTrigger.ts` - Scheduled daily notifications
+- **Weekly Trigger**: `scripts/weeklyTrigger.ts` - Scheduled weekly notifications
+- **Message Formatters**: `src/slack/messages/*.ts` - Block Kit message builders
+- **Command Handler**: `src/slack/handlers/taskCommandHandler.ts` - Ad-hoc command processing

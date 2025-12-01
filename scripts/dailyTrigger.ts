@@ -14,6 +14,10 @@
  * 2. Sends a team summary to #stirlo-assistant channel
  * 3. Sends individual DMs to assignees (one per person per day)
  * 4. Sends error notifications to #error-stirlo channel on failure
+ * 
+ * Retry Logic:
+ * - If Monday.com returns 0 tasks, retry up to 3 times with exponential backoff
+ * - This handles transient API failures that return empty results
  */
 
 import { config } from 'dotenv';
@@ -30,6 +34,53 @@ import { TaskAlert } from '../src/types/monitoring.js';
 const TEAM_CHANNEL_ID = process.env.TEAM_CHANNEL_ID;
 const ERROR_CHANNEL_ID = process.env.ERROR_CHANNEL_ID;
 const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
+
+const EXTRACTION_MAX_RETRIES = 3;
+const EXTRACTION_INITIAL_DELAY_MS = 2000;
+const EXTRACTION_BACKOFF_MULTIPLIER = 2;
+
+async function extractTasksWithRetry(
+  taskMonitor: any,
+  maxRetries: number = EXTRACTION_MAX_RETRIES
+): Promise<{ alerts: TaskAlert[]; retriesUsed: number }> {
+  let lastResult: TaskAlert[] = [];
+  let delay = EXTRACTION_INITIAL_DELAY_MS;
+
+  for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+    try {
+      console.log(`\n📋 Extracting tasks (attempt ${attempt}/${maxRetries + 1})...`);
+      const alerts = await taskMonitor.processDailyTasks();
+      lastResult = alerts;
+      
+      if (alerts.length > 0) {
+        if (attempt > 1) {
+          console.log(`✅ Successfully extracted ${alerts.length} tasks on attempt ${attempt}`);
+        }
+        return { alerts, retriesUsed: attempt - 1 };
+      }
+      
+      if (attempt <= maxRetries) {
+        console.warn(`⚠️ Got 0 tasks on attempt ${attempt}. This may be a transient API issue.`);
+        console.log(`🔄 Retrying in ${delay}ms to verify...`);
+        await sleep(delay);
+        delay = delay * EXTRACTION_BACKOFF_MULTIPLIER;
+      }
+    } catch (error: any) {
+      console.error(`❌ Extraction failed on attempt ${attempt}: ${error.message}`);
+      
+      if (attempt <= maxRetries) {
+        console.log(`🔄 Retrying in ${delay}ms...`);
+        await sleep(delay);
+        delay = delay * EXTRACTION_BACKOFF_MULTIPLIER;
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  console.log(`ℹ️ Confirmed 0 tasks after ${maxRetries + 1} attempts - this appears to be accurate.`);
+  return { alerts: lastResult, retriesUsed: maxRetries };
+}
 
 async function main() {
   console.log('='.repeat(60));
@@ -56,8 +107,12 @@ async function main() {
     const { taskMonitor } = await initializeMonitoringServices();
     console.log('✅ Services initialized');
 
-    console.log('\n📋 Extracting tasks due today...');
-    const dailyAlerts = await taskMonitor.processDailyTasks();
+    const { alerts: dailyAlerts, retriesUsed } = await extractTasksWithRetry(taskMonitor);
+    
+    if (retriesUsed > 0) {
+      console.log(`ℹ️ Task extraction required ${retriesUsed} retry(ies)`);
+    }
+    
     console.log(`   Found ${dailyAlerts.length} tasks (due today + overdue)`);
 
     const overdueCount = dailyAlerts.filter(a => a.alertType === 'overdue').length;

@@ -7,36 +7,145 @@ export interface DateFilterOptions {
   endDate: string;
 }
 
+export interface RetryConfig {
+  maxRetries: number;
+  initialDelayMs: number;
+  maxDelayMs: number;
+  backoffMultiplier: number;
+}
+
+const DEFAULT_RETRY_CONFIG: RetryConfig = {
+  maxRetries: 3,
+  initialDelayMs: 1000,
+  maxDelayMs: 10000,
+  backoffMultiplier: 2,
+};
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function isRetryableError(error: any): boolean {
+  const message = error?.message?.toLowerCase() || '';
+  const errorName = error?.name?.toLowerCase() || '';
+  const errorCode = error?.code?.toLowerCase() || '';
+  
+  const retryablePatterns = [
+    'timeout',
+    'network',
+    'econnreset',
+    'econnrefused',
+    'enotfound',
+    'econnaborted',
+    'epipe',
+    'ehostunreach',
+    'enetunreach',
+    'socket',
+    'rate limit',
+    'too many requests',
+    'fetch failed',
+    'request timeout',
+    'abort',
+    'cancel',
+    'terminated',
+    'connection',
+    '408',
+    '429',
+    '500',
+    '502',
+    '503',
+    '504',
+    '520',
+    '521',
+    '522',
+    '523',
+    '524',
+  ];
+  
+  const combinedText = `${message} ${errorName} ${errorCode}`;
+  
+  return retryablePatterns.some(pattern => combinedText.includes(pattern));
+}
+
 export class MondayClient {
   private apiToken: string;
   private baseUrl = 'https://api.monday.com/v2';
   private apiVersion = '2024-10';
+  private retryConfig: RetryConfig;
 
-  constructor(apiToken: string) {
+  constructor(apiToken: string, retryConfig?: Partial<RetryConfig>) {
     this.apiToken = apiToken;
+    this.retryConfig = { ...DEFAULT_RETRY_CONFIG, ...retryConfig };
+  }
+
+  private async executeWithRetry<T>(
+    operation: () => Promise<T>,
+    operationName: string
+  ): Promise<T> {
+    let lastError: Error | null = null;
+    let delay = this.retryConfig.initialDelayMs;
+
+    for (let attempt = 1; attempt <= this.retryConfig.maxRetries + 1; attempt++) {
+      try {
+        const result = await operation();
+        if (attempt > 1) {
+          console.log(`✅ [MondayClient] ${operationName} succeeded on attempt ${attempt}`);
+        }
+        return result;
+      } catch (error: any) {
+        lastError = error;
+        
+        const isLastAttempt = attempt > this.retryConfig.maxRetries;
+        const shouldRetry = !isLastAttempt && isRetryableError(error);
+        
+        if (shouldRetry) {
+          console.warn(`⚠️ [MondayClient] ${operationName} failed (attempt ${attempt}/${this.retryConfig.maxRetries + 1}): ${error.message}`);
+          console.log(`🔄 [MondayClient] Retrying in ${delay}ms...`);
+          await sleep(delay);
+          delay = Math.min(delay * this.retryConfig.backoffMultiplier, this.retryConfig.maxDelayMs);
+        } else if (isLastAttempt) {
+          console.error(`❌ [MondayClient] ${operationName} failed after ${attempt} attempts: ${error.message}`);
+        } else {
+          console.error(`❌ [MondayClient] ${operationName} failed with non-retryable error: ${error.message}`);
+          throw error;
+        }
+      }
+    }
+
+    throw lastError || new Error(`${operationName} failed after all retries`);
   }
 
   async query<T = any>(graphqlQuery: string, variables?: Record<string, any>): Promise<T> {
-    const response = await fetch(this.baseUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': this.apiToken,
-        'API-Version': this.apiVersion,
-      },
-      body: JSON.stringify({ 
-        query: graphqlQuery,
-        variables: variables || {},
-      }),
-    });
+    return this.executeWithRetry(async () => {
+      const response = await fetch(this.baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': this.apiToken,
+          'API-Version': this.apiVersion,
+        },
+        body: JSON.stringify({ 
+          query: graphqlQuery,
+          variables: variables || {},
+        }),
+      });
 
-    const result: MondayApiResponse = await response.json();
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
 
-    if (result.errors && result.errors.length > 0) {
-      throw new Error(`Monday.com API error: ${result.errors.map(e => e.message).join(', ')}`);
-    }
+      const result: MondayApiResponse = await response.json();
 
-    return result.data as T;
+      if (result.errors && result.errors.length > 0) {
+        const errorMessage = result.errors.map(e => e.message).join(', ');
+        if (errorMessage.toLowerCase().includes('rate') || errorMessage.toLowerCase().includes('limit')) {
+          throw new Error(`Rate limit: ${errorMessage}`);
+        }
+        throw new Error(`Monday.com API error: ${errorMessage}`);
+      }
+
+      return result.data as T;
+    }, 'query');
   }
 
   async getUsers(): Promise<MondayUser[]> {
