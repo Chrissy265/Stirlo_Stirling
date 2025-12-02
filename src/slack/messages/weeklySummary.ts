@@ -1,6 +1,6 @@
 import { TaskAlert } from '../../types/monitoring';
 import { SlackMessage, SlackBlock } from '../types';
-import { formatShortDate, groupBy, groupByDay, getPriorityEmoji, safeString, MAX_SLACK_BLOCKS } from './utils';
+import { formatShortDate, groupBy, groupByDay, getPriorityEmoji, safeString, truncateBlockText, MAX_SLACK_BLOCKS } from './utils';
 
 export function formatWeeklySummary(alerts: TaskAlert[], weekStart: Date): SlackMessage {
   const blocks: SlackBlock[] = [];
@@ -61,9 +61,10 @@ export function formatWeeklySummary(alerts: TaskAlert[], weekStart: Date): Slack
         })
         .join('\n');
 
+      const blockText = truncateBlockText(`*${day}:*\n${taskList}`);
       blocks.push({
         type: 'section',
-        text: { type: 'mrkdwn', text: `*${day}:*\n${taskList}` }
+        text: { type: 'mrkdwn', text: blockText }
       });
     }
 
@@ -81,9 +82,10 @@ export function formatWeeklySummary(alerts: TaskAlert[], weekStart: Date): Slack
         })
         .join('\n');
 
+      const workloadBlockText = truncateBlockText(`*Team Workload:*\n${workloadSummary}`);
       blocks.push({
         type: 'section',
-        text: { type: 'mrkdwn', text: `*Team Workload:*\n${workloadSummary}` }
+        text: { type: 'mrkdwn', text: workloadBlockText }
       });
     }
   }

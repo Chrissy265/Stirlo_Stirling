@@ -1,6 +1,6 @@
 import { TaskAlert } from '../../types/monitoring';
 import { SlackMessage, SlackBlock } from '../types';
-import { formatShortDate, groupBy, safeString, truncateText, MAX_SLACK_BLOCKS } from './utils';
+import { formatShortDate, groupBy, safeString, truncateText, truncateBlockText, MAX_SLACK_BLOCKS } from './utils';
 import { formatTaskAlertCompact } from './taskAlertMessage';
 
 export function formatDailySummary(alerts: TaskAlert[], date: Date): SlackMessage {
@@ -59,9 +59,10 @@ export function formatDailySummary(alerts: TaskAlert[], date: Date): SlackMessag
         .map(t => formatTaskAlertCompact(t))
         .join('\n');
 
+      const blockText = truncateBlockText(`*${displayName}:*\n${taskList}`);
       blocks.push({
         type: 'section',
-        text: { type: 'mrkdwn', text: `*${displayName}:*\n${taskList}` }
+        text: { type: 'mrkdwn', text: blockText }
       });
     }
   }
@@ -146,9 +147,10 @@ export function formatOverdueSummary(alerts: TaskAlert[]): SlackMessage {
         })
         .join('\n');
 
+      const blockText = truncateBlockText(`*${displayName}:*\n${taskList}`);
       blocks.push({
         type: 'section',
-        text: { type: 'mrkdwn', text: `*${displayName}:*\n${taskList}` }
+        text: { type: 'mrkdwn', text: blockText }
       });
     }
     

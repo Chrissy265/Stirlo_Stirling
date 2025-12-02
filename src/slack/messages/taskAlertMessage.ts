@@ -1,6 +1,6 @@
 import { TaskAlert } from '../../types/monitoring';
 import { SlackMessage, SlackBlock, SlackTextObject, SlackButtonElement } from '../types';
-import { getUrgencyEmoji, formatDate, safeString, truncateText } from './utils';
+import { getUrgencyEmoji, formatDate, safeString, truncateText, truncateBlockText } from './utils';
 
 export function formatTaskAlert(alert: TaskAlert): SlackMessage {
   const blocks: SlackBlock[] = [];
@@ -31,7 +31,7 @@ export function formatTaskAlert(alert: TaskAlert): SlackMessage {
     blocks.push({ type: 'divider' });
     blocks.push({
       type: 'section',
-      text: { type: 'mrkdwn', text: alert.contextualMessage }
+      text: { type: 'mrkdwn', text: truncateBlockText(alert.contextualMessage) }
     });
   }
 

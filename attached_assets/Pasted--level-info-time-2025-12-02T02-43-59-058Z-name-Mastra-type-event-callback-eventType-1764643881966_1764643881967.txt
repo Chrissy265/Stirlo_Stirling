@@ -1,0 +1,1055 @@
+{"level":"info","time":"2025-12-02T02:43:59.058Z","name":"Mastra","type":"event_callback","eventType":"app_mention","channel":"C09PHGX6YDU","eventId":"Ev0A1S2UCJP2","timestamp":"2025-12-02T02:43:59.058Z","msg":"📝 [Slack Socket Mode] Received event"}
+{"level":"info","time":"2025-12-02T02:43:59.059Z","name":"Mastra","eventId":"Ev0A1S2UCJP2","ackTimeMs":1,"msg":"✅ [Slack Socket Mode] Event acknowledged"}
+{"level":"info","time":"2025-12-02T02:43:59.059Z","name":"Mastra","eventType":"app_mention","channel":"C09PHGX6YDU","user":"U09ABE7ASBT","text":"<@U09Q3RHKD8V> trigger daily","msg":"📝 [Slack Socket Mode] Processing event"}
+{"level":"info","time":"2025-12-02T02:43:59.103Z","name":"Mastra","channelName":"stirlo-assistant","msg":"📝 [Slack Socket Mode] Got channel info"}
+{"level":"info","time":"2025-12-02T02:43:59.171Z","name":"Mastra","eventId":"Ev0A1S2UCJP2","channel":"C09PHGX6YDU","user":"U09ABE7ASBT","msg":"🚀 [Slack Socket Mode] Invoking workflow handler"}
+🔍 [TaskCommandParser] Parsing text: "trigger daily"
+✅ [TaskCommandParser] Matched pattern for: trigger_daily
+🔌 [Slack] Using SLACK_BOT_TOKEN from environment
+🔍 [DEBUG] Bot token ends with: vhWDFiBl
+{"level":"info","time":"2025-12-02T02:43:59.171Z","name":"Mastra","channel":"C09PHGX6YDU","channelName":"stirlo-assistant","eventType":"app_mention","hasText":true,"messagePreview":"<@U09Q3RHKD8V> trigger daily","hasAuthorizations":true,"authorizationsLength":1,"msg":"📝 [Slack Trigger] Received message from Socket Mode"}
+{"level":"info","time":"2025-12-02T02:43:59.171Z","name":"Mastra","eventType":"app_mention","messageLength":28,"msg":"📝 [Slack Trigger] Processing message (pre-filtered by Socket Mode)"}
+{"level":"info","time":"2025-12-02T02:43:59.171Z","name":"Mastra","strippedMessage":"trigger daily","msg":"🔍 [Slack Trigger] Detected task-related keywords, checking for command"}
+{"level":"info","time":"2025-12-02T02:43:59.172Z","name":"Mastra","commandType":"trigger_daily","isPersonal":false,"msg":"📋 [Slack Trigger] Task command detected, handling directly"}
+{"level":"info","time":"2025-12-02T02:43:59.191Z","name":"Mastra","msg":"📤 [SlackNotifier] Initialized"}
+🔧 [TaskCommandHandler] Handling command: trigger_daily { userId: 'U09ABE7ASBT', channel: 'C09PHGX6YDU', isPersonal: false }
+📝 [TaskMonitor] Logged query from user U09ABE7ASBT
+🚀 [TaskCommandHandler] Triggering daily notifications
+📅 [TaskMonitor] Processing daily tasks...
+📅 [MondayWorkspaceManager] Getting tasks due between 2025-12-01T13:00:00.000Z and 2025-12-02T12:59:59.999Z
+🔍 [MondayWorkspaceManager] Used API date filter for board New Client Onboarding Checklist ✅, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board New Client Onboarding Checklist ✅
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of ✅ External Consultant Onboarding Checklist, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of ✅ External Consultant Onboarding Checklist
+🔍 [MondayWorkspaceManager] Used API date filter for board ✅ External Consultant Onboarding Checklist, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board ✅ External Consultant Onboarding Checklist
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of 📝 Stirling Marketing New Employee Onboarding Checklist, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of 📝 Stirling Marketing New Employee Onboarding Checklist
+🔍 [MondayWorkspaceManager] Used API date filter for board 📝 Stirling Marketing New Employee Onboarding Checklist, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board 📝 Stirling Marketing New Employee Onboarding Checklist
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of ✅ Please check off the sections you have read, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of ✅ Please check off the sections you have read
+🔍 [MondayWorkspaceManager] Used API date filter for board ✅ Please check off the sections you have read, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board ✅ Please check off the sections you have read
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Existing Client List, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of Existing Client List
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Stirling Marketing, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of Stirling Marketing
+🔍 [MondayWorkspaceManager] Used API date filter for board Stirling Marketing, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Stirling Marketing
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Snyk, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of Snyk
+🔍 [MondayWorkspaceManager] Used API date filter for board Snyk, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Snyk
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Ironstar Content Planner, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of Ironstar Content Planner
+🔍 [MondayWorkspaceManager] Used API date filter for board Ironstar Content Planner, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Ironstar Content Planner
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Ironstar Hosting Pty Ltd, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of Ironstar Hosting Pty Ltd
+🔍 [MondayWorkspaceManager] Used API date filter for board Ironstar Hosting Pty Ltd, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Ironstar Hosting Pty Ltd
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Codehouse, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of Codehouse
+🔍 [MondayWorkspaceManager] Used API date filter for board Codehouse, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Codehouse
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Octossure, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of Octossure
+🔍 [MondayWorkspaceManager] Used API date filter for board Octossure, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Octossure
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of SM - Creative Requests, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of SM - Creative Requests
+🔍 [MondayWorkspaceManager] Used API date filter for board Stirling Marketing - Assets, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Stirling Marketing - Assets
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Stats, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of Stats
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of SM Client Project Templates, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of SM Client Project Templates
+⚠️ [MondayClient] query failed (attempt 1/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 1000ms...
+⚠️ [MondayClient] query failed (attempt 2/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 2000ms...
+⚠️ [MondayClient] query failed (attempt 3/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 4000ms...
+❌ [MondayClient] query failed after 4 attempts: HTTP 429: Too Many Requests
+⚠️ [MondayWorkspaceManager] API date filter failed for board SM Client Project Templates, falling back to client-side: HTTP 429: Too Many Requests
+⚠️ [MondayClient] query failed (attempt 1/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 1000ms...
+🔄 [MondayClient] Retrying in 2000ms...
+⚠️ [MondayClient] query failed (attempt 2/4): HTTP 429: Too Many Requests
+⚠️ [MondayClient] query failed (attempt 3/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 4000ms...
+❌ [MondayClient] query failed after 4 attempts: HTTP 429: Too Many Requests
+❌ [MondayWorkspaceManager] Failed to get items from board 1950756867: HTTP 429: Too Many Requests
+📋 [MondayWorkspaceManager] Found 0 tasks in board SM Client Project Templates
+🔄 [MondayClient] Retrying in 1000ms...
+⚠️ [MondayClient] query failed (attempt 1/4): HTTP 429: Too Many Requests
+⚠️ [MondayClient] query failed (attempt 2/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 2000ms...
+⚠️ [MondayClient] query failed (attempt 3/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 4000ms...
+❌ [MondayClient] query failed after 4 attempts: HTTP 429: Too Many Requests
+⚠️ [MondayWorkspaceManager] API date filter failed for board Subitems of DrupalCon Nara 2025, falling back to client-side: HTTP 429: Too Many Requests
+⚠️ [MondayClient] query failed (attempt 1/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 1000ms...
+⚠️ [MondayClient] query failed (attempt 2/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 2000ms...
+🔄 [MondayClient] Retrying in 4000ms...
+⚠️ [MondayClient] query failed (attempt 3/4): HTTP 429: Too Many Requests
+✅ [MondayClient] query succeeded on attempt 4
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of DrupalCon Nara 2025
+🔍 [MondayWorkspaceManager] Used API date filter for board DrupalCon Nara 2025, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board DrupalCon Nara 2025
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Material, got 1 items
+📋 [MondayWorkspaceManager] Found 1 tasks in board Subitems of Material
+🔍 [MondayWorkspaceManager] Used API date filter for board Material, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Material
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of ON HOLD: Sitecore Australia Pty Ltd, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of ON HOLD: Sitecore Australia Pty Ltd
+🔍 [MondayWorkspaceManager] Used API date filter for board ON HOLD: Sitecore Australia Pty Ltd, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board ON HOLD: Sitecore Australia Pty Ltd
+🔍 [MondayWorkspaceManager] Used API date filter for board SM - Creative Requests, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board SM - Creative Requests
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of PING WORKS PTY LTD, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of PING WORKS PTY LTD
+🔍 [MondayWorkspaceManager] Used API date filter for board PING WORKS PTY LTD, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board PING WORKS PTY LTD
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Virtuoso, got 1 items
+📋 [MondayWorkspaceManager] Found 1 tasks in board Subitems of Virtuoso
+🔍 [MondayWorkspaceManager] Used API date filter for board Virtuoso, got 1 items
+📋 [MondayWorkspaceManager] Found 1 tasks in board Virtuoso
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of One Model Pty Ltd, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of One Model Pty Ltd
+🔍 [MondayWorkspaceManager] Used API date filter for board One Model Pty Ltd, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board One Model Pty Ltd
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Acquia Australia Pty Ltd, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of Acquia Australia Pty Ltd
+🔍 [MondayWorkspaceManager] Used API date filter for board Acquia Australia Pty Ltd, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Acquia Australia Pty Ltd
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of DrupalSouth, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of DrupalSouth
+🔍 [MondayWorkspaceManager] Used API date filter for board DrupalSouth, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board DrupalSouth
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Celigo Australia Pty Ltd, got 1 items
+📋 [MondayWorkspaceManager] Found 1 tasks in board Subitems of Celigo Australia Pty Ltd
+🔍 [MondayWorkspaceManager] Used API date filter for board Celigo Australia Pty Ltd, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Celigo Australia Pty Ltd
+✅ [MondayWorkspaceManager] Total tasks found: 4
+📋 [TaskMonitor] Found 4 tasks due today
+📅 [MondayWorkspaceManager] Getting tasks due between 2025-11-01T13:00:00.000Z and 2025-12-01T12:59:59.999Z
+🔍 [MondayWorkspaceManager] Used API date filter for board New Client Onboarding Checklist ✅, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board New Client Onboarding Checklist ✅
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of ✅ External Consultant Onboarding Checklist, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of ✅ External Consultant Onboarding Checklist
+🔍 [MondayWorkspaceManager] Used API date filter for board ✅ External Consultant Onboarding Checklist, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board ✅ External Consultant Onboarding Checklist
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of 📝 Stirling Marketing New Employee Onboarding Checklist, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of 📝 Stirling Marketing New Employee Onboarding Checklist
+🔍 [MondayWorkspaceManager] Used API date filter for board 📝 Stirling Marketing New Employee Onboarding Checklist, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board 📝 Stirling Marketing New Employee Onboarding Checklist
+⚠️ [MondayClient] query failed (attempt 1/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 1000ms...
+⚠️ [MondayClient] query failed (attempt 2/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 2000ms...
+⚠️ [MondayClient] query failed (attempt 3/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 4000ms...
+❌ [MondayClient] query failed after 4 attempts: HTTP 429: Too Many Requests
+⚠️ [MondayWorkspaceManager] API date filter failed for board Subitems of ✅ Please check off the sections you have read, falling back to client-side: HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 1000ms...
+⚠️ [MondayClient] query failed (attempt 1/4): HTTP 429: Too Many Requests
+⚠️ [MondayClient] query failed (attempt 2/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 2000ms...
+⚠️ [MondayClient] query failed (attempt 3/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 4000ms...
+❌ [MondayClient] query failed after 4 attempts: HTTP 429: Too Many Requests
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of ✅ Please check off the sections you have read
+❌ [MondayWorkspaceManager] Failed to get items from board 1952174782: HTTP 429: Too Many Requests
+⚠️ [MondayClient] query failed (attempt 1/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 1000ms...
+⚠️ [MondayClient] query failed (attempt 2/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 2000ms...
+⚠️ [MondayClient] query failed (attempt 3/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 4000ms...
+❌ [MondayClient] query failed after 4 attempts: HTTP 429: Too Many Requests
+⚠️ [MondayWorkspaceManager] API date filter failed for board ✅ Please check off the sections you have read, falling back to client-side: HTTP 429: Too Many Requests
+⚠️ [MondayClient] query failed (attempt 1/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 1000ms...
+⚠️ [MondayClient] query failed (attempt 2/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 2000ms...
+⚠️ [MondayClient] query failed (attempt 3/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 4000ms...
+✅ [MondayClient] query succeeded on attempt 4
+📋 [MondayWorkspaceManager] Found 0 tasks in board ✅ Please check off the sections you have read
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Existing Client List, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of Existing Client List
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Stirling Marketing, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of Stirling Marketing
+🔍 [MondayWorkspaceManager] Used API date filter for board Stirling Marketing, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Stirling Marketing
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Snyk, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of Snyk
+🔍 [MondayWorkspaceManager] Used API date filter for board Snyk, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Snyk
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Ironstar Content Planner, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of Ironstar Content Planner
+🔍 [MondayWorkspaceManager] Used API date filter for board Ironstar Content Planner, got 4 items
+📋 [MondayWorkspaceManager] Found 4 tasks in board Ironstar Content Planner
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Ironstar Hosting Pty Ltd, got 2 items
+📋 [MondayWorkspaceManager] Found 2 tasks in board Subitems of Ironstar Hosting Pty Ltd
+🔍 [MondayWorkspaceManager] Used API date filter for board Ironstar Hosting Pty Ltd, got 1 items
+📋 [MondayWorkspaceManager] Found 1 tasks in board Ironstar Hosting Pty Ltd
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Codehouse, got 1 items
+📋 [MondayWorkspaceManager] Found 1 tasks in board Subitems of Codehouse
+{"level":"info","time":"2025-12-02T02:46:22.361Z","name":"Mastra","statusCode":200,"responseTime":45,"pingNumber":39,"successRate":"100.0%","msg":"✅ [Keep-Alive] Ping successful"}
+🔍 [MondayWorkspaceManager] Used API date filter for board Codehouse, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Codehouse
+     [GET]200stirlo-stirling.onrender.com/api/healthclientIP="74.220.49.248" requestID="2d6d75c1-e718-4efd" responseTimeMS=2 responseBytes=547 userAgent="KeepAlive-Service/1.0"
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Octossure, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of Octossure
+🔍 [MondayWorkspaceManager] Used API date filter for board Octossure, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Octossure
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of SM - Creative Requests, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of SM - Creative Requests
+🔍 [MondayWorkspaceManager] Used API date filter for board Stirling Marketing - Assets, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Stirling Marketing - Assets
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Stats, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of Stats
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of SM Client Project Templates, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of SM Client Project Templates
+🔍 [MondayWorkspaceManager] Used API date filter for board SM Client Project Templates, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board SM Client Project Templates
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of DrupalCon Nara 2025, got 8 items
+📋 [MondayWorkspaceManager] Found 8 tasks in board Subitems of DrupalCon Nara 2025
+🔍 [MondayWorkspaceManager] Used API date filter for board DrupalCon Nara 2025, got 50 items
+📋 [MondayWorkspaceManager] Found 50 tasks in board DrupalCon Nara 2025
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Material, got 3 items
+📋 [MondayWorkspaceManager] Found 3 tasks in board Subitems of Material
+🔍 [MondayWorkspaceManager] Used API date filter for board Material, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Material
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of ON HOLD: Sitecore Australia Pty Ltd, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of ON HOLD: Sitecore Australia Pty Ltd
+⚠️ [MondayClient] query failed (attempt 1/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 1000ms...
+⚠️ [MondayClient] query failed (attempt 2/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 2000ms...
+🔄 [MondayClient] Retrying in 4000ms...
+⚠️ [MondayClient] query failed (attempt 3/4): HTTP 429: Too Many Requests
+❌ [MondayClient] query failed after 4 attempts: HTTP 429: Too Many Requests
+⚠️ [MondayWorkspaceManager] API date filter failed for board ON HOLD: Sitecore Australia Pty Ltd, falling back to client-side: HTTP 429: Too Many Requests
+⚠️ [MondayClient] query failed (attempt 1/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 1000ms...
+⚠️ [MondayClient] query failed (attempt 2/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 2000ms...
+🔄 [MondayClient] Retrying in 4000ms...
+⚠️ [MondayClient] query failed (attempt 3/4): HTTP 429: Too Many Requests
+❌ [MondayClient] query failed after 4 attempts: HTTP 429: Too Many Requests
+❌ [MondayWorkspaceManager] Failed to get items from board 1922738531: HTTP 429: Too Many Requests
+📋 [MondayWorkspaceManager] Found 0 tasks in board ON HOLD: Sitecore Australia Pty Ltd
+⚠️ [MondayClient] query failed (attempt 1/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 1000ms...
+⚠️ [MondayClient] query failed (attempt 2/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 2000ms...
+⚠️ [MondayClient] query failed (attempt 3/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 4000ms...
+❌ [MondayClient] query failed after 4 attempts: HTTP 429: Too Many Requests
+⚠️ [MondayWorkspaceManager] API date filter failed for board SM - Creative Requests, falling back to client-side: HTTP 429: Too Many Requests
+⚠️ [MondayClient] query failed (attempt 1/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 1000ms...
+⚠️ [MondayClient] query failed (attempt 2/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 2000ms...
+⚠️ [MondayClient] query failed (attempt 3/4): HTTP 429: Too Many Requests
+🔄 [MondayClient] Retrying in 4000ms...
+✅ [MondayClient] query succeeded on attempt 4
+📋 [MondayWorkspaceManager] Found 0 tasks in board SM - Creative Requests
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of PING WORKS PTY LTD, got 2 items
+📋 [MondayWorkspaceManager] Found 2 tasks in board Subitems of PING WORKS PTY LTD
+🔍 [MondayWorkspaceManager] Used API date filter for board PING WORKS PTY LTD, got 1 items
+📋 [MondayWorkspaceManager] Found 1 tasks in board PING WORKS PTY LTD
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Virtuoso, got 4 items
+📋 [MondayWorkspaceManager] Found 4 tasks in board Subitems of Virtuoso
+🔍 [MondayWorkspaceManager] Used API date filter for board Virtuoso, got 2 items
+📋 [MondayWorkspaceManager] Found 2 tasks in board Virtuoso
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of One Model Pty Ltd, got 7 items
+📋 [MondayWorkspaceManager] Found 7 tasks in board Subitems of One Model Pty Ltd
+🔍 [MondayWorkspaceManager] Used API date filter for board One Model Pty Ltd, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board One Model Pty Ltd
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Acquia Australia Pty Ltd, got 19 items
+📋 [MondayWorkspaceManager] Found 19 tasks in board Subitems of Acquia Australia Pty Ltd
+🔍 [MondayWorkspaceManager] Used API date filter for board Acquia Australia Pty Ltd, got 4 items
+📋 [MondayWorkspaceManager] Found 4 tasks in board Acquia Australia Pty Ltd
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of DrupalSouth, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Subitems of DrupalSouth
+🔍 [MondayWorkspaceManager] Used API date filter for board DrupalSouth, got 1 items
+📋 [MondayWorkspaceManager] Found 1 tasks in board DrupalSouth
+🔍 [MondayWorkspaceManager] Used API date filter for board Subitems of Celigo Australia Pty Ltd, got 12 items
+📋 [MondayWorkspaceManager] Found 12 tasks in board Subitems of Celigo Australia Pty Ltd
+🔍 [MondayWorkspaceManager] Used API date filter for board Celigo Australia Pty Ltd, got 0 items
+📋 [MondayWorkspaceManager] Found 0 tasks in board Celigo Australia Pty Ltd
+✅ [MondayWorkspaceManager] Total tasks found: 121
+⚠️ [TaskMonitor] Found 121 overdue tasks
+📝 [AlertGenerator] Generating message for "Event Briefing (simple)" (due in -1 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Event Briefing (simple)"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "event briefing simple"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Awards Ceremony" (due in -1 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Awards Ceremony"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "awards ceremony"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Cast Case Study" (due in -1 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Cast Case Study"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "cast case study"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Update marketing report/spreadsheet" (due in -1 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Update marketing report/spreadsheet"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "marketing report spreadsheet"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+💾 [TaskMonitor] Persisted 4 alerts
+📝 [AlertGenerator] Generating message for "Late registration opens" (due in -31 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Late registration opens"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "late registration opens"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Promotion: 2 Weeks until DrupalAsia (Social)" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Promotion: 2 Weeks until DrupalAsia (Social)"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "promotion weeks until drupalasia social"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Runsheet crafted" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Runsheet crafted"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "runsheet crafted"
+📁 [DocumentExtractor] Found 0 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 0
+📝 [AlertGenerator] Generating message for "Start - Housekeeping script & intro scripts for the MCs" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Start - Housekeeping script & intro scripts for the MCs"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "start housekeeping script intro scripts"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Final numbers due to venue today" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Final numbers due to venue today"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "final numbers due venue today"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Balance of contract to be paid to venue" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Balance of contract to be paid to venue"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "balance contract paid venue"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Order name badges, any final printing (pull up banners, etc)" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Order name badges, any final printing (pull up banners, etc)"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "order name badges any final"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Volunteers contact info added to runsheet" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Volunteers contact info added to runsheet"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "volunteers contact info added runsheet"
+📁 [DocumentExtractor] Found 0 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 0
+📝 [AlertGenerator] Generating message for "Nudge speakers, volunteers & sponsors to finalise their registrations" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Nudge speakers, volunteers & sponsors to finalise their registrations"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "nudge speakers volunteers sponsors finalise"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Sponsor Holding Slides" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Sponsor Holding Slides"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "sponsor holding slides"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Share daily registrations update" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Share daily registrations update"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "share daily registrations"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Check sponsor logos on website" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Check sponsor logos on website"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "check sponsor logos website"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Sponsors - Register staff attendees" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Sponsors - Register staff attendees"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "sponsors register staff attendees"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Send attendee list to Champion sponsors" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Send attendee list to Champion sponsors"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "send attendee list champion sponsors"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Send attendee list to Presenting sponsors" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Send attendee list to Presenting sponsors"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "send attendee list presenting sponsors"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "AV finalised & paid" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "AV finalised & paid"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "finalised paid"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Event menus selected and returned" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Event menus selected and returned"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "event menus selected returned"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Name badges - order extras" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Name badges - order extras"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "name badges order extras"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Confirm merchandise order and delivery with supplier" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Confirm merchandise order and delivery with supplier"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "confirm merchandise order delivery supplier"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Plan for promoting Acquia during this activity" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Plan for promoting Acquia during this activity"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "plan promoting acquia during this"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Collect participant data/feedback (if available)." (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Collect participant data/feedback (if available)."
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "collect participant data feedback available"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Align with DrupalCon team on rules, prizes, and logistics." (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Align with DrupalCon team on rules, prizes, and logistics."
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "align drupalcon team rules prizes"
+📁 [DocumentExtractor] Found 0 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 0
+📝 [AlertGenerator] Generating message for "Design Treasure Hunt assets (map, cards, stickers, clues, signage)." (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Design Treasure Hunt assets (map, cards, stickers, clues, signage)."
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "design treasure hunt assets map"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Budget" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Budget"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "budget"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Decide Acquia’s “task/clue” for participants to complete." (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Decide Acquia’s “task/clue” for participants to complete."
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "decide acquia clue participants"
+📁 [DocumentExtractor] Found 0 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 0
+📝 [AlertGenerator] Generating message for "Add to DC Nara runsheet any Acquia timings" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Add to DC Nara runsheet any Acquia timings"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "add nara runsheet any acquia"
+📁 [DocumentExtractor] Found 0 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 0
+📝 [AlertGenerator] Generating message for "Reconcile all invoices and final budget" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Reconcile all invoices and final budget"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "reconcile all invoices final budget"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Things You Need to Know - Attendee email" (due in -29 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Things You Need to Know - Attendee email"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "things you know attendee email"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Invitation" (due in -28 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Invitation"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "invitation"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Book venues" (due in -28 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Book venues"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "book venues"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Agenda email - highlight sessions in 1 particular track only" (due in -27 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Agenda email - highlight sessions in 1 particular track only"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "agenda email highlight sessions particular"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Copy for LI, email & text" (due in -27 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Copy for LI, email & text"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "copy email text"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "90 second video" (due in -26 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "90 second video"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "second video"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Draft blog" (due in -26 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Draft blog"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "draft blog"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Blog sent to client" (due in -26 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Blog sent to client"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "blog sent client"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Send All Registration Invitations via the Exhibitor Portal:" (due in -26 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Send All Registration Invitations via the Exhibitor Portal:"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "send all registration invitations via"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Submit Onsite Contact Information via the Exhibitor Portal:" (due in -26 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Submit Onsite Contact Information via the Exhibitor Portal:"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "submit onsite contact information via"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Remind team to take team photo & candid shots" (due in -26 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Remind team to take team photo & candid shots"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "remind team take photo candid"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Live event" (due in -26 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Live event"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "live event"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Pull up banner returned from Canberra" (due in -26 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Pull up banner returned from Canberra"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "pull banner returned canberra"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Henry Stewart DAM conference - Sydney - 6 November" (due in -26 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Henry Stewart DAM conference - Sydney - 6 November"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "henry stewart dam conference sydney"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "DrupalSouth Community Day Canberra - 6 November" (due in -26 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "DrupalSouth Community Day Canberra - 6 November"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "drupalsouth community day canberra november"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Promotional video due from Genero" (due in -25 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Promotional video due from Genero"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "promotional video due genero"
+📁 [DocumentExtractor] Found 0 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 0
+📝 [AlertGenerator] Generating message for "Close out all social form" (due in -25 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Close out all social form"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "close out all social form"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Retrospective meeting held" (due in -25 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Retrospective meeting held"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "retrospective meeting held"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Draft LinkedIn wrap-up post with team takeaways and photos" (due in -25 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Draft LinkedIn wrap-up post with team takeaways and photos"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "draft linkedin wrap post team"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Last chance to register" (due in -22 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Last chance to register"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "last chance register"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Add deliveries to runsheet" (due in -22 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Add deliveries to runsheet"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "add deliveries runsheet"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Deliveries to the hotel - Name badges (names & blanks)- Pull up banner x 1- Media wall banner x 1" (due in -22 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Deliveries to the hotel - Name badges (names & blanks)- Pull up banner x 1- Media wall banner x 1"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "deliveries hotel name badges names"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Amend any name badges - late changes" (due in -22 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Amend any name badges - late changes"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "amend any name badges late"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Blue carpet & frame - to be packed" (due in -22 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Blue carpet & frame - to be packed"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "blue carpet frame packed"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Trophies collected" (due in -22 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Trophies collected"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "trophies collected"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Spotify playlist" (due in -22 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Spotify playlist"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "spotify playlist"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Reminder email to code sprint regos" (due in -22 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Reminder email to code sprint regos"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "reminder email code sprint regos"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Send attendee list to Presenting sponsors" (due in -22 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Send attendee list to Presenting sponsors"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "send attendee list presenting sponsors"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Review speakers and volunteers against rego list & nudge" (due in -22 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Review speakers and volunteers against rego list & nudge"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "speakers volunteers against rego list"
+📁 [DocumentExtractor] Found 0 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 0
+📝 [AlertGenerator] Generating message for "Briefing deck" (due in -22 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Briefing deck"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "briefing deck"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Build registration page" (due in -22 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Build registration page"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "build registration page"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Email copy & build email" (due in -22 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Email copy & build email"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "email copy build"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Email copy & build email (copy)" (due in -22 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Email copy & build email (copy)"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "email copy build"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Post event email" (due in -21 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Post event email"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "post event email"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Print sponsors welcome pack for onsite" (due in -21 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Print sponsors welcome pack for onsite"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "print sponsors welcome pack onsite"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Promotion: Email to attendees to get ready for the day" (due in -21 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Promotion: Email to attendees to get ready for the day"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "promotion email attendees get ready"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Order Internet via the Exhibitor Portal" (due in -21 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Order Internet via the Exhibitor Portal"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "order internet via exhibitor portal"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Briefing session with Acquia team" (due in -21 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Briefing session with Acquia team"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "briefing session acquia team"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Kieser" (due in -21 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Kieser"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "kieser"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "The Fruit Box" (due in -21 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "The Fruit Box"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "fruit box"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Source musician" (due in -21 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Source musician"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "source musician"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Source nifty random prize draw" (due in -21 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Source nifty random prize draw"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "source nifty random prize draw"
+📁 [DocumentExtractor] Found 0 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 0
+📝 [AlertGenerator] Generating message for "Outline draft budget" (due in -21 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Outline draft budget"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "outline draft budget"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Register for the conference (4 tickets) - deadline 12 Nov" (due in -20 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Register for the conference (4 tickets) - deadline 12 Nov"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "register conference tickets deadline nov"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Agenda email - highlight sessions in 1 particular track only" (due in -20 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Agenda email - highlight sessions in 1 particular track only"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "agenda email highlight sessions particular"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Finalise MC script" (due in -20 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Finalise MC script"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "finalise script"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Sponsor's client tickets deadline" (due in -20 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Sponsor's client tickets deadline"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "sponsor client tickets deadline"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Sponsor's staff tickets deadline" (due in -20 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Sponsor's staff tickets deadline"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "sponsor staff tickets deadline"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Reach out to influencers re assistance" (due in -20 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Reach out to influencers re assistance"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "reach out influencers assistance"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Promotion: Registrations are closing today at 5pm AEST" (due in -19 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Promotion: Registrations are closing today at 5pm AEST"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "promotion registrations closing today 5pm"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Close registrations at 5pm JST" (due in -19 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Close registrations at 5pm JST"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "close registrations 5pm jst"
+📁 [DocumentExtractor] Found 0 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 0
+📝 [AlertGenerator] Generating message for "Close registrations at 5pm JST - remove from website- close registration form" (due in -19 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Close registrations at 5pm JST - remove from website- close registration form"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "close registrations 5pm jst remove"
+📁 [DocumentExtractor] Found 0 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 0
+📝 [AlertGenerator] Generating message for "Create Whatsapp group for committee" (due in -19 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Create Whatsapp group for committee"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "create whatsapp group committee"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Briefing Presentation" (due in -19 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Briefing Presentation"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "briefing presentation"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Send email" (due in -19 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Send email"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "send email"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Book flights/accommodation" (due in -19 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Book flights/accommodation"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "book flights accommodation"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Sponsors - Courier deliveries deadline" (due in -18 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Sponsors - Courier deliveries deadline"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "sponsors courier deliveries deadline"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Sponsors - Deliveries arrival date" (due in -18 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Sponsors - Deliveries arrival date"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "sponsors deliveries arrival date"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Late registration closes" (due in -18 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Late registration closes"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "late registration closes"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "On-site registration opens" (due in -18 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "On-site registration opens"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "site registration opens"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Promotion: Re-share attendee detailed event information email" (due in -18 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Promotion: Re-share attendee detailed event information email"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "promotion share attendee detailed event"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Presentation slide deck - winners announcements" (due in -18 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Presentation slide deck - winners announcements"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "presentation slide deck winners announcements"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Promotions if we are named a Winner" (due in -18 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Promotions if we are named a Winner"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "promotions named winner"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "CRN Channel Awards 2025" (due in -18 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "CRN Channel Awards 2025"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "crn channel awards 2025"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Gift pack for delegates" (due in -17 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Gift pack for delegates"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "gift pack delegates"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Earlybird Drinks - 15 November" (due in -17 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Earlybird Drinks - 15 November"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "earlybird drinks november"
+📁 [DocumentExtractor] Found 0 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 0
+📝 [AlertGenerator] Generating message for "DrupalCon Nara 2025" (due in -16 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "DrupalCon Nara 2025"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "drupalcon nara 2025"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Capture photos/social posts during the Treasure Hunt." (due in -16 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Capture photos/social posts during the Treasure Hunt."
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "capture photos social posts during"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "DrupalCon Nara Treasure Hunt - 16 November" (due in -16 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "DrupalCon Nara Treasure Hunt - 16 November"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "drupalcon nara treasure hunt november"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "DrupalCon Nara 2025 - Day 1 Highlights" (due in -15 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "DrupalCon Nara 2025 - Day 1 Highlights"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "drupalcon nara 2025 day highlights"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "DrupalCon Nara 2025 - Day 1 Highlights - Mike's page" (due in -15 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "DrupalCon Nara 2025 - Day 1 Highlights - Mike's page"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "drupalcon nara 2025 day highlights"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Live event 17-19 November 2025" (due in -15 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Live event 17-19 November 2025"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "live event november 2025"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Social Post - Day 1/ Tony's Preso" (due in -15 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Social Post - Day 1/ Tony's Preso"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "social post day tony preso"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Share social recap with highlights." (due in -15 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Share social recap with highlights."
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "share social recap highlights"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "DrupalCon Nara 2025 - Day 2 Highlights (Incl Splash Awards)" (due in -14 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "DrupalCon Nara 2025 - Day 2 Highlights (Incl Splash Awards)"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "drupalcon nara 2025 day highlights"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "DrupalCon Nara 2025 - Day 2 Highlights (Incl Splash Awards) - Mike's page" (due in -14 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "DrupalCon Nara 2025 - Day 2 Highlights (Incl Splash Awards) - Mike's page"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "drupalcon nara 2025 day highlights"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "After Party - 18 November" (due in -14 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "After Party - 18 November"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "after party november"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Social Post - Day 2/ wrap up" (due in -14 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Social Post - Day 2/ wrap up"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "social post day wrap"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "On-site registration closes" (due in -13 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "On-site registration closes"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "site registration closes"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Key dates" (due in -13 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Key dates"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "key dates"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Weekly call" (due in -13 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Weekly call"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "weekly call"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Order Lead Retrieval via the Exhibitor Portal:" (due in -13 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Order Lead Retrieval via the Exhibitor Portal:"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "order lead retrieval via exhibitor"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "DrupalCon Nara - 17-19 November" (due in -13 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "DrupalCon Nara - 17-19 November"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "drupalcon nara november"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Send attendee list to Presenting & Champion sponsors" (due in -12 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Send attendee list to Presenting & Champion sponsors"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "send attendee list presenting champion"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Splash Award logos" (due in -12 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Splash Award logos"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "splash award logos"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Thank speakers email" (due in -11 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Thank speakers email"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "thank speakers email"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Report ROI/impact internally (foot traffic, leads, engagement)." (due in -11 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Report ROI/impact internally (foot traffic, leads, engagement)."
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "report roi impact internally foot"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Send speakers recording links" (due in -7 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Send speakers recording links"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "send speakers recording links"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Credits as part of sponsorship" (due in -6 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Credits as part of sponsorship"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "credits part sponsorship"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Print name badges" (due in -5 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Print name badges"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "print name badges"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Event Briefing (simple)" (due in -1 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Event Briefing (simple)"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "event briefing simple"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Awards Ceremony" (due in -1 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Awards Ceremony"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "awards ceremony"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Cast Case Study" (due in -1 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Cast Case Study"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "cast case study"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+📝 [AlertGenerator] Generating message for "Update marketing report/spreadsheet" (due in -1 days, overdue: true)
+🔍 [DocumentExtractor] Extracting documents for task: "Update marketing report/spreadsheet"
+📎 [DocumentExtractor] Found 0 Monday.com attachments
+🔍 [DocumentExtractor] SharePoint search query: "marketing report spreadsheet"
+📁 [DocumentExtractor] Found 5 SharePoint documents
+✅ [DocumentExtractor] Total unique documents: 5
+💾 [TaskMonitor] Persisted 121 alerts
+✅ [TaskMonitor] Generated 125 total daily alerts
+📋 [TaskCommandHandler] Found 125 tasks for daily notifications
+{"level":"info","time":"2025-12-02T02:49:27.290Z","name":"Mastra","channelId":"C09PHGX6YDU","blockCount":9,"hasThread":false,"msg":"📤 [SlackNotifier] Sending message to channel"}
+[ERROR]  web-api:WebClient:4 failed to match all allowed schemas [json-pointer:/blocks/3/text]
+[ERROR]  web-api:WebClient:4 must be less than 3001 characters [json-pointer:/blocks/3/text/text]
+[ERROR]  web-api:WebClient:4 failed to match all allowed schemas [json-pointer:/blocks/6/text]
+[ERROR]  web-api:WebClient:4 must be less than 3001 characters [json-pointer:/blocks/6/text/text]
+{"level":"error","time":"2025-12-02T02:49:27.348Z","name":"Mastra","channelId":"C09PHGX6YDU","error":"Error: An API error occurred: invalid_blocks\n    at platformErrorFromResult (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/errors.js:67:33)\n    at WebClient.<anonymous> (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/WebClient.js:242:60)\n    at Generator.next (<anonymous>)\n    at fulfilled (/opt/render/project/src/.mastra/output/node_modules/@slack/web-api/dist/WebClient.js:38:58)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {\n  code: 'slack_webapi_platform_error',\n  data: {\n    ok: false,\n    error: 'invalid_blocks',\n    errors: [\n      'failed to match all allowed schemas [json-pointer:/blocks/3/text]',\n      'must be less than 3001 characters [json-pointer:/blocks/3/text/text]',\n      'failed to match all allowed schemas [json-pointer:/blocks/6/text]',\n      'must be less than 3001 characters [json-pointer:/blocks/6/text/text]'\n    ],\n    response_metadata: { messages: [Array], scopes: [Array], acceptedScopes: [Array] }\n  }\n}","msg":"❌ [SlackNotifier] Failed to send message to channel"}
+⏱️ [TaskCommandHandler] Command completed in 328157ms
+{"level":"info","time":"2025-12-02T02:49:27.348Z","name":"Mastra","channelId":"C09PHGX6YDU","blockCount":1,"hasThread":true,"msg":"📤 [SlackNotifier] Sending message to channel"}
+{"level":"info","time":"2025-12-02T02:49:27.468Z","name":"Mastra","channelId":"C09PHGX6YDU","ts":"1764643767.415359","msg":"✅ [SlackNotifier] Message sent to channel"}
+{"level":"info","time":"2025-12-02T02:49:27.468Z","name":"Mastra","commandType":"trigger_daily","responseOk":true,"isError":false,"msg":"✅ [Slack Trigger] Task command response sent"}
+{"level":"info","time":"2025-12-02T02:49:27.468Z","name":"Mastra","handlerDurationMs":328297,"totalEventDurationMs":328410,"eventId":"Ev0A1S2UCJP2","msg":"✅ [Slack Socket Mode] Handler completed successfully"}
+{"level":"info","time":"2025-12-02T02:49:27.468Z","name":"Mastra","timestamp":"1764643437.785229","channel":"C09PHGX6YDU","msg":"[Slack] Removing all reactions from message"}

@@ -1,6 +1,7 @@
 import { TaskAlert } from '../../types/monitoring';
 
 export const MAX_SLACK_BLOCKS = 45;
+export const MAX_SLACK_BLOCK_TEXT = 2900;
 
 export function getUrgencyEmoji(alert: TaskAlert): string {
   if (alert.alertType === 'overdue') return '🚨';
@@ -74,6 +75,16 @@ export function safeString(value: string | null | undefined, fallback: string = 
 export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength - 3) + '...';
+}
+
+export function truncateBlockText(text: string): string {
+  if (text.length <= MAX_SLACK_BLOCK_TEXT) return text;
+  const truncated = text.slice(0, MAX_SLACK_BLOCK_TEXT - 50);
+  const lastNewline = truncated.lastIndexOf('\n');
+  if (lastNewline > MAX_SLACK_BLOCK_TEXT - 200) {
+    return truncated.slice(0, lastNewline) + '\n_...and more items truncated_';
+  }
+  return truncated + '...\n_...and more items truncated_';
 }
 
 export function escapeSlackMrkdwn(text: string): string {
