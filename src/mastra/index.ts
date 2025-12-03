@@ -21,6 +21,7 @@ import { initializeSocketMode, getSlackTestRoute, SlackNotifier, setSlackNotifie
 import { parseTaskCommand, hasTaskKeywords, stripBotMention, handleTaskCommand } from "../slack/handlers";
 import { initializeMonitoringServices, getMonitoringServices } from "../services";
 import { getChatRoute, getHistoryRoute, getConversationRoute, getHealthRoute } from "../api/lovableRoutes";
+import { getDailyCronRoute, getWeeklyCronRoute, getCronStatusRoute } from "../api/cronRoutes";
 import { format } from "node:util";
 import { startKeepAlive } from "../services/keepAlive";
 
@@ -191,6 +192,10 @@ export const mastra = new Mastra({
       getHistoryRoute(),
       getConversationRoute(),
       getHealthRoute(),
+      // Cron trigger endpoints for Render Cron Jobs
+      getDailyCronRoute(),
+      getWeeklyCronRoute(),
+      getCronStatusRoute(),
     ],
   },
   logger:
@@ -235,7 +240,9 @@ logger?.info("✅ [Mastra] Configuration validated successfully");
 
 // Register cron-based task monitoring workflows
 // Daily monitoring: 8 AM Australian timezone (AEDT/AEST) every day
-// Weekly monitoring: 8 AM Australian timezone (AEDT/AEST) on Sundays
+// Weekly monitoring: 8 AM Australian timezone (AEDT/AEST) on Mondays
+// NOTE: These Inngest cron schedules only work when connected to Inngest Cloud
+// For Render deployment, use Render Cron Jobs to call /api/cron/daily and /api/cron/weekly
 logger?.info("📅 [Cron Workflows] Registering automated task monitoring schedules");
 
 registerCronWorkflow(
@@ -249,14 +256,14 @@ registerCronWorkflow(
 logger?.info("✅ [Cron Workflows] Daily monitoring registered (8 AM AEDT/AEST, Mon-Sun)");
 
 registerCronWorkflow(
-  "TZ=Australia/Sydney 0 8 * * 0", 
+  "TZ=Australia/Sydney 0 8 * * 1", 
   slackIntelligentAssistantWorkflow,
   "weekly-task-monitoring",
   () => mastra,
   'weekly-monitoring',
   'stirlo-assistant'
 );
-logger?.info("✅ [Cron Workflows] Weekly monitoring registered (8 AM AEDT/AEST, Sundays)");
+logger?.info("✅ [Cron Workflows] Weekly monitoring registered (8 AM AEDT/AEST, Mondays)");
 
 // Initialize Keep-Alive service for Render deployment
 // Only activates when RENDER env var is present (production on Render)

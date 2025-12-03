@@ -56,16 +56,38 @@ Users can query tasks via @-mentions in any channel:
 - `@Stirlo help` - Show available commands
 
 **Scheduled Triggers (Phase 6)**:
-Standalone scripts for Replit Scheduled Deployments:
-- **Daily Trigger** (`npm run trigger:daily`): Runs 8 AM AEST daily
+HTTP endpoints for external cron job services (Render, etc.):
+- **Daily Trigger** (`POST /api/cron/daily`): Runs 8 AM AEST daily
   - Sends team summary to #stirlo-assistant
   - Sends individual DMs to assignees (one per person)
   - Includes both due-today and overdue tasks
-- **Weekly Trigger** (`npm run trigger:weekly`): Runs 8 AM AEST Monday mornings
+- **Weekly Trigger** (`POST /api/cron/weekly`): Runs 8 AM AEST Monday mornings
   - Sends weekly overview to #stirlo-assistant
   - Sends personal weekly outlook DMs to each team member
+- **Status Endpoint** (`GET /api/cron/status`): Check cron configuration
 
-**Replit Scheduled Deployment Configuration**:
+**Render Cron Job Configuration** (Production):
+Configure these cron jobs in your Render dashboard under "Cron Jobs":
+
+| Job | Schedule (UTC) | URL | Description |
+|-----|----------------|-----|-------------|
+| Daily | `0 21 * * *` | `POST https://your-app.onrender.com/api/cron/daily` | 8 AM AEDT (summer) |
+| Weekly | `0 21 * * 0` | `POST https://your-app.onrender.com/api/cron/weekly` | Monday 8 AM AEDT |
+
+**Important Notes**:
+- Render cron jobs use UTC time, not AEST/AEDT
+- `0 21 * * *` = 9 PM UTC = 8 AM AEDT (Australian Eastern Daylight Time - summer)
+- During winter (AEST), adjust to `0 22 * * *` for 8 AM AEST
+- Weekly runs Sunday 9 PM UTC which is Monday 8 AM AEDT
+- Add `CRON_SECRET` environment variable on Render for authentication
+- Include `Authorization: Bearer YOUR_CRON_SECRET` header in cron job requests
+
+**Environment Variables for Cron**:
+- `CRON_SECRET`: Shared secret for authenticating cron requests (optional but recommended)
+- `TEAM_CHANNEL_ID`: Slack channel ID for team notifications (e.g., C09PHGX6YDU)
+- `ERROR_CHANNEL_ID`: Slack channel ID for error alerts (e.g., C0A0AFTQDGB)
+
+**Legacy: Replit Scheduled Deployment Configuration** (if using Replit):
 1. Daily: Cron `0 8 * * *`, Timezone `Australia/Sydney`, Command `npm run trigger:daily`
 2. Weekly: Cron `0 8 * * 1`, Timezone `Australia/Sydney`, Command `npm run trigger:weekly`
 
@@ -238,10 +260,12 @@ Stirlo includes a comprehensive Proactive Task Monitoring system that automatica
 7. **Reliable Delivery** - Retry logic ensures tasks are extracted even during API instability
 
 ### Automatic Trigger Schedule
-| Trigger | Schedule | Timezone | What It Does |
-|---------|----------|----------|--------------|
-| **Daily** | Every day at 8:00 AM | Australia/Sydney | Posts today's tasks + overdue to #stirlo-assistant, sends personal DMs |
-| **Weekly** | Every Monday at 8:00 AM | Australia/Sydney | Posts weekly overview to #stirlo-assistant, sends personal weekly DMs |
+| Trigger | Schedule | Timezone | Render Cron (UTC) | What It Does |
+|---------|----------|----------|-------------------|--------------|
+| **Daily** | Every day at 8:00 AM | Australia/Sydney | `0 21 * * *` | Posts today's tasks + overdue to #stirlo-assistant, sends personal DMs |
+| **Weekly** | Every Monday at 8:00 AM | Australia/Sydney | `0 21 * * 0` | Posts weekly overview to #stirlo-assistant, sends personal weekly DMs |
+
+**Note**: Render cron jobs are configured via the Render dashboard to call the HTTP endpoints at `/api/cron/daily` and `/api/cron/weekly`.
 
 ### Slack Commands (Ad-Hoc Queries)
 
