@@ -145,9 +145,137 @@ async function sendPersonalDMs(
 }
 
 /**
+ * Background processor for daily tasks
+ * Runs asynchronously after immediate response
+ */
+async function processDailyInBackground(logger: any): Promise<void> {
+  const startTime = Date.now();
+  
+  logger?.info("🔧 [Cron Daily BG] Starting background processing...");
+
+  if (!SLACK_BOT_TOKEN || !TEAM_CHANNEL_ID) {
+    logger?.error("❌ [Cron Daily BG] Missing required config");
+    return;
+  }
+
+  const slackClient = new WebClient(SLACK_BOT_TOKEN);
+  const slackNotifier = new SlackNotifier(slackClient);
+
+  try {
+    logger?.info("🔧 [Cron Daily BG] Initializing monitoring services...");
+    const { taskMonitor } = await initializeMonitoringServices();
+    logger?.info("✅ [Cron Daily BG] Services initialized");
+
+    const { alerts: dailyAlerts, retriesUsed } = await extractTasksWithRetry(
+      taskMonitor,
+      'daily',
+      logger
+    );
+    
+    if (retriesUsed > 0) {
+      logger?.info(`ℹ️ [Cron Daily BG] Task extraction required ${retriesUsed} retry(ies)`);
+    }
+    
+    const overdueCount = dailyAlerts.filter(a => a.alertType === 'overdue').length;
+    const todayCount = dailyAlerts.filter(a => a.alertType === 'due_today').length;
+    
+    logger?.info(`📊 [Cron Daily BG] Found ${dailyAlerts.length} tasks (Due today: ${todayCount}, Overdue: ${overdueCount})`);
+
+    if (dailyAlerts.length === 0) {
+      logger?.info("✅ [Cron Daily BG] No tasks due today and nothing overdue!");
+      await slackNotifier.sendToChannel(TEAM_CHANNEL_ID, {
+        blocks: [
+          {
+            type: 'header',
+            text: { type: 'plain_text', text: '☀️ Good Morning Team!', emoji: true }
+          },
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `No tasks are due today and nothing is overdue. Great job staying on top of things! 🎉`
+            }
+          },
+          {
+            type: 'context',
+            elements: [{
+              type: 'mrkdwn',
+              text: `_${formatAustralianDate(getAustralianDate())}_`
+            }]
+          }
+        ],
+        text: 'Good morning! No tasks due today.'
+      });
+      logger?.info("✅ [Cron Daily BG] Sent all-clear message to team channel");
+    } else {
+      logger?.info("📤 [Cron Daily BG] Sending daily summary to team channel...");
+      const summaryMessage = formatDailySummary(dailyAlerts, getAustralianDate());
+      await slackNotifier.sendToChannel(TEAM_CHANNEL_ID, summaryMessage);
+      logger?.info("✅ [Cron Daily BG] Team summary sent");
+
+      logger?.info("📤 [Cron Daily BG] Sending individual DMs to assignees...");
+      const sentToUsers = await sendPersonalDMs(
+        slackNotifier,
+        taskMonitor,
+        dailyAlerts,
+        'daily',
+        null,
+        logger
+      );
+      logger?.info(`✅ [Cron Daily BG] Sent DMs to ${sentToUsers} team members`);
+    }
+
+    const duration = Date.now() - startTime;
+    logger?.info("=".repeat(60));
+    logger?.info(`✅ [Cron Daily BG] COMPLETED SUCCESSFULLY in ${duration}ms`);
+    logger?.info("=".repeat(60));
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    logger?.error("❌ [Cron Daily BG] TRIGGER FAILED:", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      durationMs: duration,
+    });
+
+    try {
+      const errorChannel = ERROR_CHANNEL_ID || TEAM_CHANNEL_ID;
+      if (errorChannel) {
+        await slackNotifier.sendToChannel(errorChannel, {
+          blocks: [
+            {
+              type: 'header',
+              text: { type: 'plain_text', text: '⚠️ Daily Task Trigger Failed', emoji: true }
+            },
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: `\`\`\`${error instanceof Error ? error.message : String(error)}\`\`\``
+              }
+            },
+            {
+              type: 'context',
+              elements: [{
+                type: 'mrkdwn',
+                text: `_${formatAustralianDate(getAustralianDate())}_ | Triggered via HTTP endpoint`
+              }]
+            }
+          ],
+          text: 'Daily task trigger failed - please check logs'
+        });
+        logger?.info("📤 [Cron Daily BG] Error notification sent to Slack");
+      }
+    } catch (notifyError) {
+      logger?.error("❌ [Cron Daily BG] Failed to send error notification:", notifyError);
+    }
+  }
+}
+
+/**
  * POST /api/cron/daily - Trigger daily task summary
  * Called by Render Cron Jobs at 8 AM AEST
  * Requires CRON_SECRET for authentication
+ * Returns immediately and processes in background
  */
 export function getDailyCronRoute(): ApiRoute {
   return {
@@ -157,8 +285,6 @@ export function getDailyCronRoute(): ApiRoute {
       const logger = mastra.getLogger();
       
       return async (c: Context<any>) => {
-        const startTime = Date.now();
-        
         logger?.info("=".repeat(60));
         logger?.info("🌅 [Cron Daily] DAILY TASK TRIGGER via HTTP");
         logger?.info(`UTC Time: ${new Date().toISOString()}`);
@@ -179,145 +305,157 @@ export function getDailyCronRoute(): ApiRoute {
           return c.json({ error: "TEAM_CHANNEL_ID not configured" }, 500);
         }
 
-        const slackClient = new WebClient(SLACK_BOT_TOKEN);
-        const slackNotifier = new SlackNotifier(slackClient);
-
-        try {
-          logger?.info("🔧 [Cron Daily] Initializing monitoring services...");
-          const { taskMonitor } = await initializeMonitoringServices();
-          logger?.info("✅ [Cron Daily] Services initialized");
-
-          const { alerts: dailyAlerts, retriesUsed } = await extractTasksWithRetry(
-            taskMonitor,
-            'daily',
-            logger
-          );
-          
-          if (retriesUsed > 0) {
-            logger?.info(`ℹ️ [Cron Daily] Task extraction required ${retriesUsed} retry(ies)`);
-          }
-          
-          const overdueCount = dailyAlerts.filter(a => a.alertType === 'overdue').length;
-          const todayCount = dailyAlerts.filter(a => a.alertType === 'due_today').length;
-          
-          logger?.info(`📊 [Cron Daily] Found ${dailyAlerts.length} tasks (Due today: ${todayCount}, Overdue: ${overdueCount})`);
-
-          if (dailyAlerts.length === 0) {
-            logger?.info("✅ [Cron Daily] No tasks due today and nothing overdue!");
-            await slackNotifier.sendToChannel(TEAM_CHANNEL_ID, {
-              blocks: [
-                {
-                  type: 'header',
-                  text: { type: 'plain_text', text: '☀️ Good Morning Team!', emoji: true }
-                },
-                {
-                  type: 'section',
-                  text: {
-                    type: 'mrkdwn',
-                    text: `No tasks are due today and nothing is overdue. Great job staying on top of things! 🎉`
-                  }
-                },
-                {
-                  type: 'context',
-                  elements: [{
-                    type: 'mrkdwn',
-                    text: `_${formatAustralianDate(getAustralianDate())}_`
-                  }]
-                }
-              ],
-              text: 'Good morning! No tasks due today.'
-            });
-            logger?.info("✅ [Cron Daily] Sent all-clear message to team channel");
-          } else {
-            logger?.info("📤 [Cron Daily] Sending daily summary to team channel...");
-            const summaryMessage = formatDailySummary(dailyAlerts, getAustralianDate());
-            await slackNotifier.sendToChannel(TEAM_CHANNEL_ID, summaryMessage);
-            logger?.info("✅ [Cron Daily] Team summary sent");
-
-            logger?.info("📤 [Cron Daily] Sending individual DMs to assignees...");
-            const sentToUsers = await sendPersonalDMs(
-              slackNotifier,
-              taskMonitor,
-              dailyAlerts,
-              'daily',
-              null,
-              logger
-            );
-            logger?.info(`✅ [Cron Daily] Sent DMs to ${sentToUsers} team members`);
-          }
-
-          const duration = Date.now() - startTime;
-          logger?.info("=".repeat(60));
-          logger?.info(`✅ [Cron Daily] COMPLETED SUCCESSFULLY in ${duration}ms`);
-          logger?.info("=".repeat(60));
-
-          return c.json({
-            success: true,
-            message: "Daily trigger completed",
-            stats: {
-              totalTasks: dailyAlerts.length,
-              dueToday: todayCount,
-              overdue: overdueCount,
-              retriesUsed,
-              durationMs: duration,
-            },
-            timestamp: new Date().toISOString(),
+        // Start background processing (fire-and-forget)
+        logger?.info("🚀 [Cron Daily] Starting background processing...");
+        setImmediate(() => {
+          processDailyInBackground(logger).catch(err => {
+            logger?.error("❌ [Cron Daily] Background processing error:", err);
           });
-        } catch (error) {
-          const duration = Date.now() - startTime;
-          logger?.error("❌ [Cron Daily] TRIGGER FAILED:", {
-            error: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined,
-            durationMs: duration,
-          });
+        });
 
-          try {
-            const errorChannel = ERROR_CHANNEL_ID || TEAM_CHANNEL_ID;
-            if (errorChannel) {
-              await slackNotifier.sendToChannel(errorChannel, {
-                blocks: [
-                  {
-                    type: 'header',
-                    text: { type: 'plain_text', text: '⚠️ Daily Task Trigger Failed', emoji: true }
-                  },
-                  {
-                    type: 'section',
-                    text: {
-                      type: 'mrkdwn',
-                      text: `\`\`\`${error instanceof Error ? error.message : String(error)}\`\`\``
-                    }
-                  },
-                  {
-                    type: 'context',
-                    elements: [{
-                      type: 'mrkdwn',
-                      text: `_${formatAustralianDate(getAustralianDate())}_ | Triggered via HTTP endpoint`
-                    }]
-                  }
-                ],
-                text: 'Daily task trigger failed - please check logs'
-              });
-              logger?.info("📤 [Cron Daily] Error notification sent to Slack");
-            }
-          } catch (notifyError) {
-            logger?.error("❌ [Cron Daily] Failed to send error notification:", notifyError);
-          }
-
-          return c.json({
-            success: false,
-            error: error instanceof Error ? error.message : String(error),
-            timestamp: new Date().toISOString(),
-          }, 500);
-        }
+        // Return immediately (within 30 seconds)
+        return c.json({
+          success: true,
+          message: "Daily trigger accepted - processing in background",
+          note: "Check #stirlo-assistant for the task summary in 1-2 minutes",
+          timestamp: new Date().toISOString(),
+        });
       };
     },
   };
 }
 
 /**
+ * Background processor for weekly tasks
+ * Runs asynchronously after immediate response
+ */
+async function processWeeklyInBackground(logger: any): Promise<void> {
+  const startTime = Date.now();
+  
+  logger?.info("🔧 [Cron Weekly BG] Starting background processing...");
+
+  if (!SLACK_BOT_TOKEN || !TEAM_CHANNEL_ID) {
+    logger?.error("❌ [Cron Weekly BG] Missing required config");
+    return;
+  }
+
+  const slackClient = new WebClient(SLACK_BOT_TOKEN);
+  const slackNotifier = new SlackNotifier(slackClient);
+
+  try {
+    logger?.info("🔧 [Cron Weekly BG] Initializing monitoring services...");
+    const { taskMonitor } = await initializeMonitoringServices();
+    logger?.info("✅ [Cron Weekly BG] Services initialized");
+
+    const { alerts: weeklyAlerts, retriesUsed } = await extractTasksWithRetry(
+      taskMonitor,
+      'weekly',
+      logger
+    );
+    
+    if (retriesUsed > 0) {
+      logger?.info(`ℹ️ [Cron Weekly BG] Task extraction required ${retriesUsed} retry(ies)`);
+    }
+    
+    logger?.info(`📊 [Cron Weekly BG] Found ${weeklyAlerts.length} tasks due this week`);
+
+    const weekStart = getStartOfWeek(getAustralianDate());
+
+    if (weeklyAlerts.length === 0) {
+      logger?.info("✅ [Cron Weekly BG] No tasks scheduled for this week!");
+      await slackNotifier.sendToChannel(TEAM_CHANNEL_ID, {
+        blocks: [
+          {
+            type: 'header',
+            text: { type: 'plain_text', text: '☀️ Happy Monday Team!', emoji: true }
+          },
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `Looks like a light week ahead - no tasks currently scheduled. Time to get ahead on upcoming projects! 🚀`
+            }
+          },
+          {
+            type: 'context',
+            elements: [{
+              type: 'mrkdwn',
+              text: `_Week of ${formatAustralianDate(weekStart)}_`
+            }]
+          }
+        ],
+        text: 'Happy Monday! Light week ahead with no scheduled tasks.'
+      });
+      logger?.info("✅ [Cron Weekly BG] Sent light week message to team channel");
+    } else {
+      logger?.info("📤 [Cron Weekly BG] Sending weekly summary to team channel...");
+      const teamSummary = formatWeeklySummary(weeklyAlerts, weekStart);
+      await slackNotifier.sendToChannel(TEAM_CHANNEL_ID, teamSummary);
+      logger?.info("✅ [Cron Weekly BG] Team weekly summary sent");
+
+      logger?.info("📤 [Cron Weekly BG] Sending personal weekly outlooks...");
+      const sentToUsers = await sendPersonalDMs(
+        slackNotifier,
+        null,
+        weeklyAlerts,
+        'weekly',
+        weekStart,
+        logger
+      );
+      logger?.info(`✅ [Cron Weekly BG] Sent weekly outlooks to ${sentToUsers} team members`);
+    }
+
+    const duration = Date.now() - startTime;
+    logger?.info("=".repeat(60));
+    logger?.info(`✅ [Cron Weekly BG] COMPLETED SUCCESSFULLY in ${duration}ms`);
+    logger?.info("=".repeat(60));
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    logger?.error("❌ [Cron Weekly BG] TRIGGER FAILED:", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      durationMs: duration,
+    });
+
+    try {
+      const errorChannel = ERROR_CHANNEL_ID || TEAM_CHANNEL_ID;
+      if (errorChannel) {
+        await slackNotifier.sendToChannel(errorChannel, {
+          blocks: [
+            {
+              type: 'header',
+              text: { type: 'plain_text', text: '⚠️ Weekly Task Trigger Failed', emoji: true }
+            },
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: `\`\`\`${error instanceof Error ? error.message : String(error)}\`\`\``
+              }
+            },
+            {
+              type: 'context',
+              elements: [{
+                type: 'mrkdwn',
+                text: `_${formatAustralianDate(getAustralianDate())}_ | Triggered via HTTP endpoint`
+              }]
+            }
+          ],
+          text: 'Weekly task trigger failed - please check logs'
+        });
+        logger?.info("📤 [Cron Weekly BG] Error notification sent to Slack");
+      }
+    } catch (notifyError) {
+      logger?.error("❌ [Cron Weekly BG] Failed to send error notification:", notifyError);
+    }
+  }
+}
+
+/**
  * POST /api/cron/weekly - Trigger weekly task summary
  * Called by Render Cron Jobs every Monday at 8 AM AEST
  * Requires CRON_SECRET for authentication
+ * Returns immediately and processes in background
  */
 export function getWeeklyCronRoute(): ApiRoute {
   return {
@@ -327,8 +465,6 @@ export function getWeeklyCronRoute(): ApiRoute {
       const logger = mastra.getLogger();
       
       return async (c: Context<any>) => {
-        const startTime = Date.now();
-        
         logger?.info("=".repeat(60));
         logger?.info("📅 [Cron Weekly] WEEKLY TASK TRIGGER via HTTP (Monday Morning)");
         logger?.info(`UTC Time: ${new Date().toISOString()}`);
@@ -349,133 +485,21 @@ export function getWeeklyCronRoute(): ApiRoute {
           return c.json({ error: "TEAM_CHANNEL_ID not configured" }, 500);
         }
 
-        const slackClient = new WebClient(SLACK_BOT_TOKEN);
-        const slackNotifier = new SlackNotifier(slackClient);
-
-        try {
-          logger?.info("🔧 [Cron Weekly] Initializing monitoring services...");
-          const { taskMonitor } = await initializeMonitoringServices();
-          logger?.info("✅ [Cron Weekly] Services initialized");
-
-          const { alerts: weeklyAlerts, retriesUsed } = await extractTasksWithRetry(
-            taskMonitor,
-            'weekly',
-            logger
-          );
-          
-          if (retriesUsed > 0) {
-            logger?.info(`ℹ️ [Cron Weekly] Task extraction required ${retriesUsed} retry(ies)`);
-          }
-          
-          logger?.info(`📊 [Cron Weekly] Found ${weeklyAlerts.length} tasks due this week`);
-
-          const weekStart = getStartOfWeek(getAustralianDate());
-
-          if (weeklyAlerts.length === 0) {
-            logger?.info("✅ [Cron Weekly] No tasks scheduled for this week!");
-            await slackNotifier.sendToChannel(TEAM_CHANNEL_ID, {
-              blocks: [
-                {
-                  type: 'header',
-                  text: { type: 'plain_text', text: '☀️ Happy Monday Team!', emoji: true }
-                },
-                {
-                  type: 'section',
-                  text: {
-                    type: 'mrkdwn',
-                    text: `Looks like a light week ahead - no tasks currently scheduled. Time to get ahead on upcoming projects! 🚀`
-                  }
-                },
-                {
-                  type: 'context',
-                  elements: [{
-                    type: 'mrkdwn',
-                    text: `_Week of ${formatAustralianDate(weekStart)}_`
-                  }]
-                }
-              ],
-              text: 'Happy Monday! Light week ahead with no scheduled tasks.'
-            });
-            logger?.info("✅ [Cron Weekly] Sent light week message to team channel");
-          } else {
-            logger?.info("📤 [Cron Weekly] Sending weekly summary to team channel...");
-            const teamSummary = formatWeeklySummary(weeklyAlerts, weekStart);
-            await slackNotifier.sendToChannel(TEAM_CHANNEL_ID, teamSummary);
-            logger?.info("✅ [Cron Weekly] Team weekly summary sent");
-
-            logger?.info("📤 [Cron Weekly] Sending personal weekly outlooks...");
-            const sentToUsers = await sendPersonalDMs(
-              slackNotifier,
-              null,
-              weeklyAlerts,
-              'weekly',
-              weekStart,
-              logger
-            );
-            logger?.info(`✅ [Cron Weekly] Sent weekly outlooks to ${sentToUsers} team members`);
-          }
-
-          const duration = Date.now() - startTime;
-          logger?.info("=".repeat(60));
-          logger?.info(`✅ [Cron Weekly] COMPLETED SUCCESSFULLY in ${duration}ms`);
-          logger?.info("=".repeat(60));
-
-          return c.json({
-            success: true,
-            message: "Weekly trigger completed",
-            stats: {
-              totalTasks: weeklyAlerts.length,
-              retriesUsed,
-              durationMs: duration,
-            },
-            timestamp: new Date().toISOString(),
+        // Start background processing (fire-and-forget)
+        logger?.info("🚀 [Cron Weekly] Starting background processing...");
+        setImmediate(() => {
+          processWeeklyInBackground(logger).catch(err => {
+            logger?.error("❌ [Cron Weekly] Background processing error:", err);
           });
-        } catch (error) {
-          const duration = Date.now() - startTime;
-          logger?.error("❌ [Cron Weekly] TRIGGER FAILED:", {
-            error: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined,
-            durationMs: duration,
-          });
+        });
 
-          try {
-            const errorChannel = ERROR_CHANNEL_ID || TEAM_CHANNEL_ID;
-            if (errorChannel) {
-              await slackNotifier.sendToChannel(errorChannel, {
-                blocks: [
-                  {
-                    type: 'header',
-                    text: { type: 'plain_text', text: '⚠️ Weekly Task Trigger Failed', emoji: true }
-                  },
-                  {
-                    type: 'section',
-                    text: {
-                      type: 'mrkdwn',
-                      text: `\`\`\`${error instanceof Error ? error.message : String(error)}\`\`\``
-                    }
-                  },
-                  {
-                    type: 'context',
-                    elements: [{
-                      type: 'mrkdwn',
-                      text: `_${formatAustralianDate(getAustralianDate())}_ | Triggered via HTTP endpoint`
-                    }]
-                  }
-                ],
-                text: 'Weekly task trigger failed - please check logs'
-              });
-              logger?.info("📤 [Cron Weekly] Error notification sent to Slack");
-            }
-          } catch (notifyError) {
-            logger?.error("❌ [Cron Weekly] Failed to send error notification:", notifyError);
-          }
-
-          return c.json({
-            success: false,
-            error: error instanceof Error ? error.message : String(error),
-            timestamp: new Date().toISOString(),
-          }, 500);
-        }
+        // Return immediately (within 30 seconds)
+        return c.json({
+          success: true,
+          message: "Weekly trigger accepted - processing in background",
+          note: "Check #stirlo-assistant for the weekly summary in 1-2 minutes",
+          timestamp: new Date().toISOString(),
+        });
       };
     },
   };
