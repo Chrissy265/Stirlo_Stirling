@@ -271,7 +271,12 @@ export class MondayWorkspaceManager {
       }
     }
 
-    const taskUrl = `https://${workspace.subdomain}.monday.com/boards/${boardConfig.id}/pulses/${item.id}`;
+    // Monday.com URL format: https://ACCOUNT.monday.com/boards/BOARD_ID/pulses/ITEM_ID
+    // If no custom subdomain is set (just 'monday'), use the standard URL without subdomain
+    const mondayDomain = workspace.subdomain === 'monday' 
+      ? 'monday.com' 
+      : `${workspace.subdomain}.monday.com`;
+    const taskUrl = `https://${mondayDomain}/boards/${boardConfig.id}/pulses/${item.id}`;
 
     return {
       id: item.id,
@@ -388,7 +393,9 @@ export function loadWorkspaceConfigsFromEnv(): WorkspaceConfig[] {
   const configs: WorkspaceConfig[] = [];
   
   const mondayApiKey = process.env.MONDAY_API_KEY;
-  const mondaySubdomain = process.env.MONDAY_SUBDOMAIN || 'stirlingmarketing';
+  // Default to 'monday' which means use standard monday.com domain (no subdomain)
+  // Set MONDAY_SUBDOMAIN to your account slug if you have a custom subdomain
+  const mondaySubdomain = process.env.MONDAY_SUBDOMAIN || 'monday';
   
   if (mondayApiKey) {
     const boardConfigsJson = process.env.MONDAY_BOARD_CONFIGS;
